@@ -1,0 +1,16 @@
+Binary Classification:
+    0- Clean Dirt!
+    1- There's something in there!
+
+Multi-Class Classification:
+    0- Clean
+    1- Metal
+    2- Plastic
+    3- Rock
+    4- Organic
+
+Object Detection
+    Just use bounding boxes that show where in the wave it resembles there being something
+
+
+Idea: Have a three-headed model that uses all three.

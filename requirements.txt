@@ -1,0 +1,8 @@
+Python Libraries:
+    librosa, matplotlib, numpy, os, pathlib, PIL, sys
+
+    All but librosa hear is as easy as pip install <library>
+
+    NOTE:   trying to install librosa with pip is a herculean task that I am not smart enough to do. Instead, 
+            I use conda to download it and run the sensor interpretation logic in a conda environment
+
