@@ -2,8 +2,13 @@
 from pathlib import Path
 from PIL import Image, ImageChops
 
+
+
 import convert_wav_to_spectro as c
 import wav_file_functions as w
+import interpret_images as interpret
+
+
 
 trials_per = 3
 
@@ -19,7 +24,44 @@ file_type   = ".WAV"
 
 new_dir = "WAV_files/InvertPhase_vs_Stereo/Spectrograms"
 
+
+
+def split_spectograms():
+    all_spectrograms = [f.name for f in Path("WAV_files/InvertPhase_vs_Stereo/Spectrograms").iterdir() if f.is_file()]
+    all_spectrograms.sort()
+
+    PIlist = []
+    STEREOlist = []
+
+    for spectro in all_spectrograms:
+        if "mixed_PI" in spectro:
+            PIlist.append(spectro)
+        elif "mixed_Stereo" in spectro:
+            STEREOlist.append(spectro)
+
+    return PIlist, STEREOlist
+
+
+
 if __name__ == "__main__":
+
+    PIList, STEREolist = split_spectograms()
+
+    for i in range(len(PIList)):
+        img1 = PIList[i]
+        img2 = STEREolist[i]
+
+        img1_path = f"WAV_files/InvertPhase_vs_Stereo/Spectrograms/{img1}"
+        img2_path = f"WAV_files/InvertPhase_vs_Stereo/Spectrograms/{img2}"
+
+        sample_num = (i%3)+1 
+
+        new_name = img1.split("_")[0]
+        new_image_path = f"WAV_files/InvertPhase_vs_Stereo/Spectrograms/Compare/{new_name}_{sample_num}.png"
+
+        interpret.large_image_compare(image1_path=img1_path, image2_path=img2_path, new_image_path=new_image_path)
+
+    exit()
 
     #Need to handle creating Spectrograms folder / checking if it already exists
     check_for_path = Path(new_dir)
