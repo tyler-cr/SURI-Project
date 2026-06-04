@@ -57,6 +57,9 @@ def large_image_compare(image1_path: str = "test1.png", image2_path: str = "test
 def crop_image():
     a=5
 
+def convert_image_monochrome(color: tuple = ()):
+    print("TODO")
+
 if __name__ == "__main__":
     print("testing image compare")
     large_image_compare(image1_path="WAV_files/InvertPhase_vs_Stereo/Spectrograms/100Hz10Vpp_mixed_PI_sample1.png", image2_path="WAV_files/InvertPhase_vs_Stereo/Spectrograms/100Hz10Vpp_mixed_Stereo_sample1.png",new_image_path="doubletest.png")

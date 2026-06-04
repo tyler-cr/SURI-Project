@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 from pathlib import Path
 from PIL import Image, ImageChops
-
-
+import sys
 
 import convert_wav_to_spectro as c
 import wav_file_functions as w
 import interpret_images as interpret
+
+sys.path.insert(1, "../utils")
+
+import tutils
 
 
 
@@ -18,195 +21,272 @@ Hz = ["10","100","200"]
 #Voltage peak to peak (don't ask me to explain)
 Vpp = ["5", "10", "20"]
 
+MONO = 0
+STEREO = 1
+
 file_number = 2
-file_prefix = "WAV_files/InvertPhase_vs_Stereo/260601_"
-file_type   = ".WAV"
+FILE_PREFIX = "WAV_files/InvertPhase_vs_Stereo/260601_"
+FILE_TYPE   = ".WAV"
 
 new_dir = "WAV_files/InvertPhase_vs_Stereo/Spectrograms"
 
 
 
-def split_spectograms():
+def split_spectograms(list1_split: str = "mixed_PI", list2_split: str = "mixed_Stereo"):
     all_spectrograms = [f.name for f in Path("WAV_files/InvertPhase_vs_Stereo/Spectrograms").iterdir() if f.is_file()]
     all_spectrograms.sort()
 
-    PIlist = []
-    STEREOlist = []
+    list1 = []
+    list2 = []
 
     for spectro in all_spectrograms:
-        if "mixed_PI" in spectro:
-            PIlist.append(spectro)
-        elif "mixed_Stereo" in spectro:
-            STEREOlist.append(spectro)
+        if list1_split in spectro:
+            list1.append(spectro)
+        elif list2_split in spectro:
+            list2.append(spectro)
 
-    return PIlist, STEREOlist
+    if len(list1) != len(list2):
+        raise ValueError(f"ERROR: List sizes are not equal! {list1_split} size: {len(list1)}. {list2_split} size {len(list2)}")
+
+    return list1, list2
+
+def create_large_compare_directory( list1_split: str = "mixed_PI", 
+                                    list2_split: str = "mixed_Stereo", 
+                                    img_path: str = "WAV_files/InvertPhase_vs_Stereo/Spectrograms/",
+                                    samples_per: int = 3,
+                                    new_dir: str = "Compare"
+                                    ):
+    list1, list2 = split_spectograms(list1_split=list1_split, list2_split=list2_split)
+
+    new_dir_rel = f"{img_path}/{new_dir}"
+    tutils.create_directory(new_dir_rel)
+
+
+    for i in range(len(list1)):
+        img1 = list1[i]
+        img2 = list2[i]
+
+        img1_path = f"{img_path}{img1}"
+        img2_path = f"{img_path}{img2}"
+
+        sample_num = (i%3)+1 
+
+        new_name = img1.split("_")[0]
+        new_image_path = f"{new_dir_rel}/{new_name}_{sample_num}.png"
+
+        interpret.large_image_compare(image1_path=img1_path, image2_path=img2_path, new_image_path=new_image_path)
+
+#function currently assumes that audio_file_list is all mono or all stereo. Maybe change?
+def splice_and_spectro( file_num_start: int = 2,
+                        samples_count:  int = 3,
+                        audio_file_list: list = None,
+                        type: int = STEREO,
+                        splice_time: int = 10,
+                        splice_type: int = w.SPLICE_MIDDLE,
+                        mix: bool = False,
+                        file_prefix: str = "WAV_files/InvertPhase_vs_Stereo/260601_",
+                        file_type: str = FILE_TYPE
+                        ):
+    
+    file_num = file_num_start
+
+    if audio_file_list is None:
+        raise TypeError("ERROR: audio_file_list cannot be None")
+    if type != 0 and type != 1:
+        print(type)
+        raise ValueError(f"ERROR: type must be MONO(0) or STEREO(1). Recieved: {type}")
+
+    sample = 1
+    currentHz = 0
+    currentVpp = 0
+
+    spliced_directory = f"WAV_files/InvertPhase_vs_Stereo/Spliced/"
+    tutils.create_directory(spliced_directory)
+
+    if mix:
+        mixed_directory = f"WAV_files/InvertPhase_vs_Stereo/Mixed/Spectrograms"
+        tutils.create_directory(mixed_directory)
+
+    for _ in range(len(audio_file_list)):
+        file_num_str = f"{file_num:03d}"
+
+        if type == MONO:
+            
+            data_file  = f"{file_prefix}{file_num_str}_Tr1{file_type}"
+            noise_file = f"{file_prefix}{file_num_str}_Tr2{file_type}"
+            
+            print(f"attempting to grab {data_file} and {noise_file} as AudioSegments!\n")
+            
+            data_AS  = w.create_AudioSegment(data_file)
+            noise_AS = w.create_AudioSegment(noise_file)
+
+        else:
+            stereo_file  = f"{file_prefix}{file_num_str}{file_type}"
+
+            print(f"attempting to grab {stereo_file} as AudioSegments!\n")
+
+            data_AS, noise_AS = w.create_stereo_AudioSegment(stereo_file)
+        
+        file_num += 1
+
+        data_AS  = w.splice_AudioSegment(data_AS, splice_time, splice_type)
+        noise_AS = w.splice_AudioSegment(noise_AS, splice_time, splice_type)
+
+        spliced_directory = f"WAV_files/InvertPhase_vs_Stereo/Spliced/260601_"
+
+        print("Taking spliced audio and exporting into new wavs for spectrograms\n")
+        data_file_spliced  = f"{spliced_directory}{file_num_str}_spliced_data{file_type}"
+        w.AudioSegment_to_wav(data_AS, data_file_spliced)
+        noise_file_spliced = f"{spliced_directory}{file_num_str}_spliced_noise{file_type}"
+        w.AudioSegment_to_wav(noise_AS, noise_file_spliced)
+
+        hertz = Hz[currentHz]
+        vol = Vpp[currentVpp]
+        print(f"current hertz: {hertz}, current vol: {vol}, current sample: {sample}\n")
+
+        type_str = "MONO" if type == MONO else "STEREO"
+
+        spectro_title_data = f"{hertz}Hz{vol}Vpp_data_{type_str}_sample{sample}"
+        spectro_title_noise = f"{hertz}Hz{vol}Vpp_noise_{type_str}_sample{sample}"
+
+        spectro_file_path_data  = new_dir+"/"+spectro_title_data
+        spectro_file_path_noise = new_dir+"/"+spectro_title_noise
+
+        data_image  = c.create_spectrogram_from_wav(data_file_spliced, spectro_title_data, new_dir)
+        noise_image = c.create_spectrogram_from_wav(noise_file_spliced, spectro_title_noise, new_dir)
+
+        if mix:
+
+            spectro_title_mixed = f"{hertz}Hz{vol}Vpp_mixed_{type_str}_sample{sample}"
+            #spectro_file_path_mixed = new_dir+"/"+spectro_title_mixed
+
+
+            mixed_file = f"260601_{file_num_str}_Mixed{file_type}"
+            mixed_directory = f"WAV_files/InvertPhase_vs_Stereo/Mixed"
+
+            
+            w.overlay_wavs(data_AS, noise_AS, f"{mixed_directory}/{mixed_file}")
+
+            c.create_spectrogram_from_wav(f"{mixed_directory}/{mixed_file}", spectro_title_mixed, f"{mixed_directory}/Spectrograms")
+
+        # there is a much more elegant way to do this but lets get it working before we optimize
+        sample += 1
+        if sample > samples_count:
+            sample = 1
+            currentVpp += 1
+            if currentVpp > 2:
+                currentVpp = 0
+                currentHz +=1
+                if currentHz > 2:
+                    currentHz = 0
+                    break
+
+# this currently only works for Stereo
+def splice_and_spectro_with_dict(
+                        wav_dict: dict, 
+                        type: int = STEREO, 
+                        splice_time: int = 10,
+                        splice_type: int = w.SPLICE_MIDDLE,
+                        mix: bool = False,
+                        wav_directory: str = None
+                        ):
+
+    if wav_dict is None:
+        raise TypeError("ERROR: wav_dict cannot be None")
+    if type != 1:
+        print(type)
+        raise ValueError(f"ERROR: type must be STEREO(1). Currently doesn't support MONO(0). Recieved: {type}")
+    if wav_directory is None:
+        raise TypeError("ERROR: wav_directory cannot be None")
+    
+    spliced_directory = f"{wav_directory}/Spliced/"
+    tutils.create_directory(spliced_directory)
+
+    spectrogram_directory = f"{wav_directory}/Spectrograms/"
+    tutils.create_directory(spectrogram_directory)
+
+    if mix:
+        mixed_directory = f"{wav_directory}/Mixed/Spectrograms"
+        tutils.create_directory(mixed_directory)
+
+    if wav_directory[-1] == '/':
+        wav_directory = wav_directory[:-1]
+
+    #key, value
+    for wav_file, detail in wav_dict.items():
+        stereo_file  = f"{wav_directory}/{wav_file}" # maybe make the function handle if user already pet the slash instead of hard coding it?
+
+        print(f"attempting to grab {stereo_file} as AudioSegments!\n")
+
+        data_AS, noise_AS = w.create_stereo_AudioSegment(stereo_file)
+
+        data_AS  = w.splice_AudioSegment(data_AS, splice_time, splice_type)
+        noise_AS = w.splice_AudioSegment(noise_AS, splice_time, splice_type)
+
+        print("Taking spliced audio and exporting into new wavs for spectrograms\n")
+
+        data_file_spliced  = f"{spliced_directory}data_{wav_file}"
+        noise_file_spliced = f"{spliced_directory}noise_{wav_file}"
+
+
+        w.AudioSegment_to_wav(data_AS, data_file_spliced)
+        w.AudioSegment_to_wav(data_AS, noise_file_spliced)
+
+        data_image = c.create_spectrogram_from_wav(data_file_spliced, f"{detail}_data", spectrogram_directory)
+        noise_image = c.create_spectrogram_from_wav(noise_file_spliced, f"{detail}_noise", spectrogram_directory)
+
+        if mix:
+            spectro_title_mixed = f"{detail}_mixed"
+            mixed_file = f"mixed_{wav_file}"
+            mixed_directory = f"{wav_directory}/Mixed"
+            w.overlay_wavs(data_AS, noise_AS, f"{mixed_directory}/{mixed_file}")
+            c.create_spectrogram_from_wav(f"{mixed_directory}/{mixed_file}", spectro_title_mixed, f"{mixed_directory}/Spectrograms")
+
+
+
+
+
+
+
+    
+    
+
 
 
 
 if __name__ == "__main__":
 
-    PIList, STEREolist = split_spectograms()
+    wav_dict = tutils.dict_wav_from_csv("../docs/6-3-26_Recording_Notes.csv")
 
-    for i in range(len(PIList)):
-        img1 = PIList[i]
-        img2 = STEREolist[i]
-
-        img1_path = f"WAV_files/InvertPhase_vs_Stereo/Spectrograms/{img1}"
-        img2_path = f"WAV_files/InvertPhase_vs_Stereo/Spectrograms/{img2}"
-
-        sample_num = (i%3)+1 
-
-        new_name = img1.split("_")[0]
-        new_image_path = f"WAV_files/InvertPhase_vs_Stereo/Spectrograms/Compare/{new_name}_{sample_num}.png"
-
-        interpret.large_image_compare(image1_path=img1_path, image2_path=img2_path, new_image_path=new_image_path)
-
-    exit()
-
-    #Need to handle creating Spectrograms folder / checking if it already exists
-    check_for_path = Path(new_dir)
-    if check_for_path.is_dir():
-        print("Destination directort already exists!")
-    else:
-        Path(new_dir).mkdir(parents=True, exist_ok=True)
-
-    all_wavs = [f.name for f in Path("WAV_files/InvertPhase_vs_Stereo").iterdir() if f.is_file()]
-    all_wavs.sort()
+    splice_and_spectro_with_dict(wav_dict=wav_dict, splice_time=30, wav_directory="WAV_files/Distances")
 
 
-    #would love if this wasn't hardcoded, but for now it'll do. Maybe down the line so this is reusable, I'll have some regex
-    # to comprehend what's going on
-    mono_with_pi = all_wavs[:54]
-    stereo_wo_pi = all_wavs[54:]
+    # NOTE: THIS IS OLD CODE BEFORE ME USING CSVS FOR GRABBING WAVS. KEEPING FOR NOW
 
-    print("Iterating over mono audio\n")
+    # tutils.create_directory(new_dir)
 
-    file_num = 2
-    sample = 1
-    currentHz = 0
-    currentVpp = 0
+    # all_wavs = [f.name for f in Path("WAV_files/InvertPhase_vs_Stereo").iterdir() if f.is_file()]
+    # all_wavs.sort()
 
-    for file in range(len(mono_with_pi)//2):
-        file_num_str = f"{file_num:03d}"
-
-        data_file  = f"{file_prefix}{file_num_str}_Tr1{file_type}"
-        noise_file = f"{file_prefix}{file_num_str}_Tr2{file_type}"
-
-        print(f"attempting to grab {data_file} and {noise_file} as AudioSegments!\n")
-        data_AS  = w.create_AudioSegment(data_file)
-        noise_AS = w.create_AudioSegment(noise_file)
-        file_num += 1
-
-        data_AS  = w.splice_AudioSegment(data_AS)
-        noise_AS = w.splice_AudioSegment(noise_AS)
-
-        print("Taking spliced audio and exporting into new wavs for spectrograms\n")
-        data_file_spliced  = f"{file_prefix}{file_num_str}_spliced_Tr1{file_type}"
-        w.AudioSegment_to_wav(data_AS, data_file_spliced)
-        noise_file_spliced = f"{file_prefix}{file_num_str}_spliced_Tr2{file_type}"
-        w.AudioSegment_to_wav(noise_AS, noise_file_spliced)
-
-        hertz = Hz[currentHz]
-        vol = Vpp[currentVpp]
-        print(f"current hertz: {hertz}, current vol: {vol}, current sample: {sample}\n")
-
-        spectro_title_data = f"{hertz}Hz{vol}Vpp_data_PI_sample{sample}"
-        spectro_title_noise = f"{hertz}Hz{vol}Vpp_noise_PI_sample{sample}"
-
-        spectro_file_path_data  = new_dir+"/"+spectro_title_data
-        spectro_file_path_noise = new_dir+"/"+spectro_title_noise
-
-        data_image  = c.create_spectrogram_from_wav(data_file_spliced, spectro_title_data, new_dir)
-        noise_image = c.create_spectrogram_from_wav(noise_file_spliced, spectro_title_noise, new_dir)
-
-        #Mix
-        print("Mixing spliced data and noise AudioSegments")
-        
-        spectro_title_mixed = f"{hertz}Hz{vol}Vpp_mixed_PI_sample{sample}"
-        spectro_file_path_mixed = new_dir+"/"+spectro_title_mixed
-
-        mixed_file = f"{file_prefix}{file_num_str}_Mixed{file_type}"
-        w.overlay_wavs(data_AS, noise_AS, mixed_file)
-
-        mixed_image = c.create_spectrogram_from_wav(mixed_file, spectro_title_mixed, new_dir)
-
-        # there is a much more elegant way to do this but lets get it working before we optimize
-        sample += 1
-        if sample > 3:
-            sample = 1
-            currentVpp += 1
-            if currentVpp > 2:
-                currentVpp = 0
-                currentHz +=1
-                if currentHz > 2:
-                    currentHz = 0
-                    print("We SHOULD be done with PI now...")
-    print("confirmed done w/ PI. Nice :D\n")
-
-    sample = 1
-    currentHz = 0
-    currentVpp = 0
-
-    print("Beginning iterating over stereo\n")
-    for file in range(len(stereo_wo_pi)):
-        file_num_str = f"{file_num:03d}"
-        stereo_file  = f"{file_prefix}{file_num_str}{file_type}"
-
-        print(f"Attempting to grab stero of {stereo_file}")
-        data_AS, noise_AS = w.create_stereo_AudioSegment(stereo_file)
-        file_num += 1
-
-        data_AS  = w.splice_AudioSegment(data_AS)
-        noise_AS = w.splice_AudioSegment(noise_AS)
-
-        print("Taking spliced audio and exporting into new wavs for spectrograms\n")
-        data_file_spliced  = f"{file_prefix}{file_num_str}_spliced_data{file_type}"
-        w.AudioSegment_to_wav(data_AS, data_file_spliced)
-        noise_file_spliced = f"{file_prefix}{file_num_str}_spliced_noise{file_type}"
-        w.AudioSegment_to_wav(noise_AS, noise_file_spliced)
-
-        hertz = Hz[currentHz]
-        vol = Vpp[currentVpp]
-        print(f"current hertz: {hertz}, current vol: {vol}, current sample: {sample}\n")
-
-        spectro_title_data = f"{hertz}Hz{vol}Vpp_data_PI_sample{sample}"
-        spectro_title_noise = f"{hertz}Hz{vol}Vpp_noise_PI_sample{sample}"
-
-        spectro_file_path_data  = new_dir+"/"+spectro_title_data
-        spectro_file_path_noise = new_dir+"/"+spectro_title_noise
-
-        data_image  = c.create_spectrogram_from_wav(data_file_spliced, spectro_title_data, new_dir)
-        noise_image = c.create_spectrogram_from_wav(noise_file_spliced, spectro_title_noise, new_dir)
+    # print(len(all_wavs))
 
 
-        #Phase Invert
-        print("Phase Inverting the noise image")
-        noise_AS = w.phaseinvert_AudioSegment(noise_AS)
+    # #would love if this wasn't hardcoded, but for now it'll do. Maybe down the line so this is reusable, I'll have some regex
+    # # to comprehend what's going on
+    # mono_with_pi = all_wavs[:54]
+    # stereo_wo_pi = all_wavs[54:]
 
-        #Mix
-        print("Mixing spliced data and noise AudioSegments")
+    # print("Iterating over mono audio\n")
 
-        spectro_title_mixed = f"{hertz}Hz{vol}Vpp_mixed_Stereo_sample{sample}"
-        spectro_file_path_mixed = new_dir+"/"+spectro_title_mixed
+    # splice_and_spectro(audio_file_list=mono_with_pi, type = MONO, mix=True)
+    
+    # print("Iterating over stereo audio\n")
+    
+    # splice_and_spectro(audio_file_list=stereo_wo_pi, file_num_start=29, mix=True)
 
-        mixed_file = f"{file_prefix}{file_num_str}_Mixed{file_type}"
-        w.overlay_wavs(data_AS, noise_AS, mixed_file)
+    # create_large_compare_directory(list1_split="mixed_PI", list2_split="mixed_Stereo", new_dir="Stereo_vs_Mono_Comparisons")
 
-        mixed_image = c.create_spectrogram_from_wav(mixed_file, spectro_title_mixed, new_dir)
-
-        # there is a much more elegant way to do this but lets get it working before we optimize
-        sample += 1
-        if sample > 3:
-            sample = 1
-            currentVpp += 1
-            if currentVpp > 2:
-                currentVpp = 0
-                currentHz +=1
-                if currentHz > 2:
-                    currentHz = 0
-                    print("We SHOULD be done with PI now...")
-                    break
-    print("confirmed done w/ STEREO. Nice :D\n")
+    # create_large_compare_directory(list1_split="data", list2_split="noise", new_dir="Data_vs_Noise_Comparisons")
 
 
 
