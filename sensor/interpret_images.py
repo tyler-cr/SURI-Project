@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 from PIL import Image, ImageChops
 from pathlib import Path
+import sys
+
+sys.path.insert(1, "/Users/tylercrimando/SURI-Project/utils")
+
+import tutils
 
 def image_diff(image1_path: str = "test1.png", image2_path: str = "test2.png", new_image_path: str = "image_diff.png"):
     img1 = Image.open(image1_path).convert("RGB")
@@ -62,5 +67,21 @@ def convert_image_monochrome(color: tuple = ()):
     print("TODO")
 
 if __name__ == "__main__":
-    print("testing image compare")
-    large_image_compare(image1_path="WAV_files/InvertPhase_vs_Stereo/Spectrograms/100Hz10Vpp_mixed_PI_sample1.png", image2_path="WAV_files/InvertPhase_vs_Stereo/Spectrograms/100Hz10Vpp_mixed_Stereo_sample1.png",new_image_path="doubletest.png")
+
+    file_path = "/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/Spliced/averaged/spectrograms"
+
+    all_spectros = [f.name for f in Path(file_path).iterdir() if f.is_file()]
+
+    noise_spectros = [noise for noise in all_spectros if "noise" in noise]
+    data_spectros = [data for data in all_spectros if "data" in data]
+
+    noise_spectros.sort()
+    data_spectros.sort()
+
+    tutils.create_directory(f"{file_path}/compares")
+
+    for i in range(len(noise_spectros)):
+        print(f"creating image #{i+1} out of {len(noise_spectros)}")
+        spectro_name = f"{noise_spectros[i][6:-4]}_noise_vs_data.png"
+        large_image_compare(f"{file_path}/{data_spectros[i]}", f"{file_path}/{noise_spectros[i]}", f"{file_path}/compares/{spectro_name}")
+    

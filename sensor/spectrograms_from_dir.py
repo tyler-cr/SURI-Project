@@ -7,7 +7,7 @@ import convert_wav_to_spectro as c
 import wav_file_functions as w
 import interpret_images as interpret
 
-sys.path.insert(1, "../utils")
+sys.path.insert(1, "/Users/tylercrimando/SURI-Project/utils")
 
 import tutils
 
@@ -283,8 +283,18 @@ def rename_and_splice_and_spectro(wav_dict: dict,
         data_image = c.create_spectrogram_from_wav(data_file_spliced, f"{wav_file[:-4]}_data", spectrogram_directory)
         noise_image = c.create_spectrogram_from_wav(noise_file_spliced, f"{wav_file[:-4]}_noise", spectrogram_directory)
 
+def spectrograms_from_dir(wav_directory: str = None):
+    all_wavs = [f.name for f in Path(wav_directory).iterdir() if f.is_file()]
+    all_wavs.sort()
 
+    tutils.create_directory(f"{wav_directory}/spectrograms")
 
+    spectrogram_directory = f"{wav_directory}/spectrograms"
+
+    for wav in all_wavs:
+        print(f"Creating spectrogram for {wav}")
+        wav_file = f"{wav_directory}/{wav}"
+        c.create_spectrogram_from_wav(wav_file_dir=wav_file, spectrogram_title=wav[:-4], spectrogram_filepath=spectrogram_directory)
 
     
 
@@ -298,9 +308,12 @@ def rename_and_splice_and_spectro(wav_dict: dict,
 
 if __name__ == "__main__":
 
-    wav_dict = tutils.dict_wav_from_csv("../docs/6-3-26_Recording_Notes.csv")
+    spectrograms_from_dir("/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/Spliced/averaged", )
 
-    rename_and_splice_and_spectro(rename_or_copy=tutils.RENAME, wav_dict=wav_dict, splice_time=30, wav_directory="WAV_files/Distances")
+    # wav_dict = tutils.dict_wav_from_csv("../docs/6-3-26_Recording_Notes.csv")
+
+    # rename_and_splice_and_spectro(rename_or_copy=tutils.RENAME, wav_dict=wav_dict, splice_time=30, wav_directory="WAV_files/Distances")
+
 
 
     # NOTE: THIS IS OLD CODE BEFORE ME USING CSVS FOR GRABBING WAVS. KEEPING FOR NOW

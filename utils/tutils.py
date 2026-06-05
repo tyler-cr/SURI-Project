@@ -12,7 +12,7 @@ COPY = 1
 def create_directory(new_dir: str = "WAV_files/InvertPhase_vs_Stereo/Spectrograms"):
     check_for_path = Path(new_dir)
     if check_for_path.is_dir():
-        print("Destination directory already exists!")
+        print("Destination directory already exists!\n")
     else:
         Path(new_dir).mkdir(parents=True, exist_ok=True)
 
@@ -71,4 +71,6 @@ def batch_rename_and_copy(csv_file_path: str = None, directory_of_files: str = N
 
 if __name__ == "__main__":
     print("TESTING batch_rename_csv\n")
-    batch_rename_and_copy(action= tutils.COPY, csv_file_path= "docs/6-3-26_Recording_Notes.csv", directory_of_files="/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances")
+
+
+    #batch_rename_and_copy(action= COPY, csv_file_path= "docs/6-3-26_Recording_Notes.csv", directory_of_files="/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances")

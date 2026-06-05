@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
+
 import numpy as np
 from scipy.io import wavfile
 import librosa
@@ -7,6 +9,10 @@ import matplotlib.pyplot as plt
 import sys
 import os
 from PIL import Image
+
+sys.path.insert(1, "/Users/tylercrimando/SURI-Project/utils")
+
+import tutils
 
 from pydub import AudioSegment, effects
 
@@ -140,7 +146,7 @@ def wav_average(wav_list: list = None, output_file: str = "averaged_wav.wav"):
     Given list of wavs, takes arithmetic mean of all in list and then creates new wav of averages
     """
 
-    if wav_list is not list:
+    if type(wav_list) is not list:
         raise TypeError(f"ERROR: wav_list must be of type list. Recieved: {type(wav_list)}")
 
     sample_rate, baseline_data = wavfile.read(wav_list[0])
@@ -158,7 +164,7 @@ def wav_average(wav_list: list = None, output_file: str = "averaged_wav.wav"):
     averaged_audio = np.mean(audio_tracks, axis=0)
     final_audio = averaged_audio.astype(baseline_data.dtype)
 
-    wav_file.write(output_file, sample_rate, final_audio)
+    wavfile.write(output_file, sample_rate, final_audio)
 
 
 def phaseinvert_AudioSegment(audio: AudioSegment) -> AudioSegment:
@@ -181,4 +187,36 @@ def phaseinvert_AudioSegment(audio: AudioSegment) -> AudioSegment:
 if __name__ == "__main__":
     cur_dir = "WAV_files/Distances/Spliced"
     
-    test_list = [f"{cur_dir}/", f"{cur_dir}", f"{cur_dir}"]
+    test_path = "/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/Spliced"
+
+    # Get list of filenames only
+    test_list = [f.name for f in Path(test_path).iterdir() if (f.is_file() and "Hz" in f.name)]
+    test_list.sort()
+
+    # Create destination directory safely
+    dest_dir = f"{test_path}/averaged"
+    tutils.create_directory(dest_dir)
+
+    num_batches = len(test_list) // 3
+    
+    for i in range(num_batches):
+        # Get the 3 filenames for this batch
+        batch_filenames = test_list[3*i : 3*i+3]
+        
+        # Create full paths for reading ONLY (do not modify the original filenames list)
+        batch_paths = [f"{test_path}/{fname}" for fname in batch_filenames]
+        
+        # Determine the base name for the output file using the FIRST file's name
+        # Use .stem to remove extension cleanly, regardless of length
+        base_name = Path(batch_filenames[0]).stem[:-2]
+        
+        output_filename = f"{base_name}_average.wav"
+        output_full_path = f"{dest_dir}/{output_filename}"
+        
+        print(f"Averaging batch starting with: {base_name}")
+
+        try:
+            wav_average(batch_paths, output_full_path)
+            print(f"Successfully saved to: {output_full_path}\n")
+        except Exception as e:
+            print(f"Error processing batch {i}: {e}\n")
