@@ -143,7 +143,30 @@ def AudioSegment_to_wav(audio: AudioSegment, file_path: str) -> None:
 # assumes that wav files are already of the same length
 def wav_average(wav_list: list = None, output_file: str = "averaged_wav.wav"):
     """
-    Given list of wavs, takes arithmetic mean of all in list and then creates new wav of averages
+    Generate an averaged WAV file from multiple input audio tracks.
+    
+    Reads all WAV files in the provided list, verifies they share the same 
+    sample rate, computes the arithmetic mean of their audio data at each 
+    sample point, and exports the result as a single averaged WAV file.
+    
+    The output preserves the original audio data type and sample rate for 
+    compatibility with downstream processing.
+    
+    Note:
+        All input files must have matching sample rates, otherwise a ValueError 
+        is raised. Files must also be the same length (handled by NumPy's mean).
+    
+    Args:
+        wav_list: List of paths to WAV files to average.
+        output_file: Destination path for the averaged WAV file. Defaults to 'averaged_wav.wav'.
+        
+    Returns:
+        None. Writes the averaged audio file to disk.
+        
+    Raises:
+        TypeError: If wav_list is not a list.
+        ValueError: If sample rates between files do not match.
+        RuntimeError: If any file fails to load (from underlying wavfile.read).
     """
 
     if type(wav_list) is not list:
