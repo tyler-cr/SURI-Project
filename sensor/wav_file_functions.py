@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import numpy as np
+from scipy.io import wavfile
 import librosa
 import matplotlib.pyplot as plt
 import sys
@@ -14,21 +15,55 @@ SPLICE_BACK = 1
 SPLICE_MIDDLE = 2
 
 def overlay_wavs(wav1: AudioSegment, wav2: AudioSegment, mixed_dir_and_file: str = "final_mix.wav", format: str = "wav") -> None:
-    '''
-    Takes AudioSegment objects and overlays them and saves them to user defined directory if specified
-    '''
+    """
+    Overlays two AudioSegments and exports the result.
+
+    Args:
+        wav1: The base audio segment.
+        wav2: The audio segment to overlay on top of wav1.
+        mixed_dir_and_file: Output file path (default: 'final_mix.wav').
+        format: Export format (default: 'wav').
+
+    Returns:
+        None. Writes the mixed audio directly to the specified file.
+    """
 
     #mix waves
     mixed_audio = wav1.overlay(wav2)
     mixed_audio.export(mixed_dir_and_file, format=format)
 
 def create_AudioSegment(wav1_path: str) -> AudioSegment:
+    """
+    Loads an audio file into an AudioSegment object.
+
+    Args:
+        wav1_path: Path to the audio file to load.
+
+    Returns:
+        An AudioSegment object representing the loaded audio.
+
+    Raises:
+        RuntimeError: If the file cannot be found, is corrupted, or fails to load.
+    """
+
     try:
         return AudioSegment.from_file(wav1_path)
     except Exception as e:
         raise RuntimeError(f"Failed to load audio from {wav1_path}: {e}")
     
 def create_stereo_AudioSegment(wav1_path: str):
+    """
+    Loads a stereo audio file and splits it into separate left and right channels.
+
+    Args:
+        wav1_path: Path to the stereo audio file.
+
+    Returns:
+        A tuple containing two AudioSegment objects: (left_channel, right_channel).
+
+    Raises:
+        RuntimeError: If the file cannot be loaded or does not contain exactly two channels.
+    """
     try:
         stereo = AudioSegment.from_file(wav1_path)
     
@@ -43,6 +78,25 @@ def create_stereo_AudioSegment(wav1_path: str):
         raise RuntimeError(f"Failed to load audio from {wav1_path}: {e}")
 
 def splice_AudioSegment(audio: AudioSegment, time: float = 10, mode: int = SPLICE_MIDDLE) -> AudioSegment:
+    """
+    Extracts a central, leading, or trailing segment of a specified duration from an AudioSegment.
+
+    The function removes audio from the start, end, or both sides to leave exactly 'time' seconds.
+
+    Args:
+        audio: The source AudioSegment to splice.
+        time: The desired duration (in seconds) of the resulting segment.
+        mode: The splicing strategy:
+              - SPLICE_MIDDLE: Keeps the center portion (removes equal time from start/end).
+              - SPLICE_FRONT: Keeps the beginning portion (removes time from the end).
+              - SPLICE_BACK: Keeps the ending portion (removes time from the start).
+
+    Returns:
+        A new AudioSegment of length 'time'.
+
+    Raises:
+        ValueError: If 'time' is greater than or equal to the audio duration, or if 'mode' is invalid.
+    """
 
     audio_dur = audio.duration_seconds
 
@@ -52,9 +106,10 @@ def splice_AudioSegment(audio: AudioSegment, time: float = 10, mode: int = SPLIC
     time_to_cut = audio_dur - time
 
     time_to_cut *= 1000
+    time_to_cut = int(time_to_cut)
 
     if mode == SPLICE_MIDDLE:
-        half_time = time_to_cut/2
+        half_time = int(time_to_cut/2)
         spliced = audio[half_time:-half_time]
     elif mode == SPLICE_FRONT:
         spliced = audio[time_to_cut:]
@@ -66,11 +121,64 @@ def splice_AudioSegment(audio: AudioSegment, time: float = 10, mode: int = SPLIC
     return spliced
 
 def AudioSegment_to_wav(audio: AudioSegment, file_path: str) -> None:
+    """
+    Exports an AudioSegment object to a WAV file.
+
+    Args:
+        audio: The AudioSegment object to export.
+        file_path: The destination path (including filename) for the WAV file.
+
+    Returns:
+        None. Writes the file directly to disk.
+    """
+
     audio.export(file_path, format="wav")
+
+# assumes that wav files are already of the same length
+def wav_average(wav_list: list = None, output_file: str = "averaged_wav.wav"):
+    """
+    Given list of wavs, takes arithmetic mean of all in list and then creates new wav of averages
+    """
+
+    if wav_list is not list:
+        raise TypeError(f"ERROR: wav_list must be of type list. Recieved: {type(wav_list)}")
+
+    sample_rate, baseline_data = wavfile.read(wav_list[0])
+
+    audio_tracks = [baseline_data]
+
+    for wav_file in wav_list[1:]:
+        sr, data = wavfile.read(wav_file)
+
+        if sr != sample_rate:
+            raise ValueError(f"ERROR: Sample rates must all match. Expected rate: {sample_rate}, Recieved {sr} from {wav_file}")
+        
+        audio_tracks.append(data)
+    
+    averaged_audio = np.mean(audio_tracks, axis=0)
+    final_audio = averaged_audio.astype(baseline_data.dtype)
+
+    wav_file.write(output_file, sample_rate, final_audio)
 
 
 def phaseinvert_AudioSegment(audio: AudioSegment) -> AudioSegment:
+    """
+    Inverts the phase of an AudioSegment by multiplying sample values by -1.
+
+    Args:
+        audio: The AudioSegment to invert.
+
+    Returns:
+        A new AudioSegment with inverted phase.
+
+    Note:
+        Phase-inverted audio is often used for noise cancellation when mixed
+        with the original signal.
+    """
+
     return effects.invert_phase(audio)
 
 if __name__ == "__main__":
-    a = 3
+    cur_dir = "WAV_files/Distances/Spliced"
+    
+    test_list = [f"{cur_dir}/", f"{cur_dir}", f"{cur_dir}"]

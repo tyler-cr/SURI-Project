@@ -11,8 +11,6 @@ sys.path.insert(1, "../utils")
 
 import tutils
 
-
-
 trials_per = 3
 
 #Hertz
@@ -29,8 +27,6 @@ FILE_PREFIX = "WAV_files/InvertPhase_vs_Stereo/260601_"
 FILE_TYPE   = ".WAV"
 
 new_dir = "WAV_files/InvertPhase_vs_Stereo/Spectrograms"
-
-
 
 def split_spectograms(list1_split: str = "mixed_PI", list2_split: str = "mixed_Stereo"):
     all_spectrograms = [f.name for f in Path("WAV_files/InvertPhase_vs_Stereo/Spectrograms").iterdir() if f.is_file()]
@@ -184,7 +180,6 @@ def splice_and_spectro( file_num_start: int = 2,
 # this currently only works for Stereo
 def splice_and_spectro_with_dict(
                         wav_dict: dict, 
-                        type: int = STEREO, 
                         splice_time: int = 10,
                         splice_type: int = w.SPLICE_MIDDLE,
                         mix: bool = False,
@@ -193,9 +188,6 @@ def splice_and_spectro_with_dict(
 
     if wav_dict is None:
         raise TypeError("ERROR: wav_dict cannot be None")
-    if type != 1:
-        print(type)
-        raise ValueError(f"ERROR: type must be STEREO(1). Currently doesn't support MONO(0). Recieved: {type}")
     if wav_directory is None:
         raise TypeError("ERROR: wav_directory cannot be None")
     
@@ -230,7 +222,7 @@ def splice_and_spectro_with_dict(
 
 
         w.AudioSegment_to_wav(data_AS, data_file_spliced)
-        w.AudioSegment_to_wav(data_AS, noise_file_spliced)
+        w.AudioSegment_to_wav(noise_AS, noise_file_spliced)
 
         data_image = c.create_spectrogram_from_wav(data_file_spliced, f"{detail}_data", spectrogram_directory)
         noise_image = c.create_spectrogram_from_wav(noise_file_spliced, f"{detail}_noise", spectrogram_directory)
@@ -242,9 +234,59 @@ def splice_and_spectro_with_dict(
             w.overlay_wavs(data_AS, noise_AS, f"{mixed_directory}/{mixed_file}")
             c.create_spectrogram_from_wav(f"{mixed_directory}/{mixed_file}", spectro_title_mixed, f"{mixed_directory}/Spectrograms")
 
+def rename_and_splice_and_spectro(wav_dict: dict, 
+                        splice_time: int = 10,
+                        splice_type: int = w.SPLICE_MIDDLE,
+                        wav_directory: str = None,
+                        rename_or_copy: int = tutils.RENAME
+                        ):
+    
+    spliced_directory = f"{wav_directory}/Spliced/"
+    tutils.create_directory(spliced_directory)
+
+    spectrogram_directory = f"{wav_directory}/Spectrograms/"
+    tutils.create_directory(spectrogram_directory)
+
+    if wav_directory[-1] == '/':
+        wav_directory = wav_directory[:-1]
+
+    tutils.batch_rename_and_copy(directory_of_files = wav_directory, wav_dict=wav_dict, action=rename_or_copy)
+
+    #tremendously hacky way to deal with this right now that works only with the assumption of Hz
+    if rename_or_copy == tutils.RENAME:
+        all_wavs = [f.name for f in Path(f"{wav_directory}").iterdir() if (f.is_file() and "Hz" in f.name)]
+    else:
+        #Copying currently doesn't work. Will attempt to fix
+        all_wavs = [f.name for f in Path(f"{wav_directory}/COPY").iterdir() if (f.is_file() and "Hz" in f.name)]
+
+    all_wavs.sort()
+
+    for wav_file in all_wavs:
+        stereo_file  = f"{wav_directory}/{wav_file}"
+
+        print(f"attempting to grab {stereo_file} as AudioSegments!\n")
+
+        data_AS, noise_AS = w.create_stereo_AudioSegment(stereo_file)
+
+        data_AS  = w.splice_AudioSegment(data_AS, splice_time, splice_type)
+        noise_AS = w.splice_AudioSegment(noise_AS, splice_time, splice_type)
+
+        print("Taking spliced audio and exporting into new wavs for spectrograms\n")
+
+        data_file_spliced  = f"{spliced_directory}data_{wav_file}"
+        noise_file_spliced = f"{spliced_directory}noise_{wav_file}"
+
+
+        w.AudioSegment_to_wav(data_AS, data_file_spliced)
+        w.AudioSegment_to_wav(noise_AS, noise_file_spliced)
+
+        data_image = c.create_spectrogram_from_wav(data_file_spliced, f"{wav_file[:-4]}_data", spectrogram_directory)
+        noise_image = c.create_spectrogram_from_wav(noise_file_spliced, f"{wav_file[:-4]}_noise", spectrogram_directory)
 
 
 
+
+    
 
 
 
@@ -258,7 +300,7 @@ if __name__ == "__main__":
 
     wav_dict = tutils.dict_wav_from_csv("../docs/6-3-26_Recording_Notes.csv")
 
-    splice_and_spectro_with_dict(wav_dict=wav_dict, splice_time=30, wav_directory="WAV_files/Distances")
+    rename_and_splice_and_spectro(rename_or_copy=tutils.RENAME, wav_dict=wav_dict, splice_time=30, wav_directory="WAV_files/Distances")
 
 
     # NOTE: THIS IS OLD CODE BEFORE ME USING CSVS FOR GRABBING WAVS. KEEPING FOR NOW

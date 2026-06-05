@@ -41,6 +41,7 @@ def image_compare(image1_path: str = "test1.png", image2_path: str = "test2.png"
 
     combined_img.save(new_image_path)
 
+
 def large_image_compare(image1_path: str = "test1.png", image2_path: str = "test2.png", new_image_path: str = "large_image_compare.png"):
     image_compare(image1_path=image1_path, image2_path=image2_path, new_image_path="temp_comp.png")
     image_diff(image1_path=image1_path, image2_path=image2_path, new_image_path="temp_diff.png")
