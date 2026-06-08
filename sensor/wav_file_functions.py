@@ -258,17 +258,15 @@ def batch_augment_wav(wav_dir: str = None, count_per: int = 10):
     
     if wav_dir[-1] == "/": wav_dir = wav_dir[:-1]
 
-    wav_list = [f.name for f in Path(wav_dir).iterdir() if (f.is_file) and f.name[0] != '.']
+    wav_list = [f.name for f in Path(wav_dir).iterdir() if (f.is_file()) and f.name[0] != '.']
     tutils.create_directory(f"{wav_dir}/augmented")
 
     for wav_file in wav_list:
 
-        wav_file = f"{wav_dir}/augmented/"
-
         for i in range(count_per):
             augmented_file_path = f"{wav_dir}/augmented/{wav_file[:-4]}_{i:03d}.wav"
 
-            sr, augmented_audio, dtype = augment_wav(wav_file)
+            sr, augmented_audio, dtype = augment_wav(f"{wav_dir}/{wav_file}")
             final_audio = augmented_audio.astype(dtype)
 
             write(augmented_file_path, sr, final_audio)
@@ -283,18 +281,7 @@ def batch_augment_wav(wav_dir: str = None, count_per: int = 10):
 if __name__ == "__main__":
     wav_dir = "/Users/tylercrimando/Downloads/ESC-50-master/audio/5-263831-A-6.wav"
     
-    try:
-        sr, augmented_audio, dtype = augment_wav(wav_dir)
-        
-        # Ensure dtype matches what 'write' expects
-        # If input was 16-bit int, output should be 16-bit int
-        final_audio = augmented_audio.astype(dtype)
-        
-        write("demo-augment.wav", sr, final_audio)
-        print(f"Saved augmented file: demo-augment.wav")
-        
-    except Exception as e:
-        print(f"Error: {e}")
+    batch_augment_wav("/Users/tylercrimando/Desktop/demo")
 
     #TODO: make this into a function
     # cur_dir = "WAV_files/Distances/Spliced"
