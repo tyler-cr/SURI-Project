@@ -8,6 +8,8 @@ import librosa
 import matplotlib.pyplot as plt
 import sys
 import os
+import random
+from scipy.io.wavfile import read, write
 from PIL import Image
 
 sys.path.insert(1, "/Users/tylercrimando/SURI-Project/utils")
@@ -189,7 +191,6 @@ def wav_average(wav_list: list = None, output_file: str = "averaged_wav.wav"):
 
     wavfile.write(output_file, sample_rate, final_audio)
 
-
 def phaseinvert_AudioSegment(audio: AudioSegment) -> AudioSegment:
     """
     Inverts the phase of an AudioSegment by multiplying sample values by -1.
@@ -207,39 +208,127 @@ def phaseinvert_AudioSegment(audio: AudioSegment) -> AudioSegment:
 
     return effects.invert_phase(audio)
 
+def augment_wav(wav_file: str):
+    sample_rate, wav_array = wavfile.read(wav_file)
+    original_dtype = wav_array.dtype
+    original_length = len(wav_array)
+    
+    if np.issubdtype(original_dtype, np.integer):
+        max_int = np.iinfo(original_dtype).max
+        wav_array_float = wav_array.astype(np.float32) / max_int
+    else:
+        wav_array_float = wav_array.astype(np.float32)
+        max_int = 1.0
+    
+    if random.random() < 0.67:
+        percent = random.uniform(-30, 30) / 100.0
+        shift_samples = int(percent * original_length)
+        wav_array_float = np.roll(wav_array_float, shift=shift_samples)
+
+    if random.random() < 0.40:
+        amplitude = 0.1 * (wav_array_float.max() - wav_array_float.min())
+        noise = amplitude * (np.random.random(len(wav_array_float)) - 0.5)
+        wav_array_float += noise
+
+    if random.random() < 0.40:
+        rate = 0.5 + random.random()
+        stretched = librosa.effects.time_stretch(wav_array_float, rate=rate)
+        
+        if len(stretched) > original_length:
+            wav_array_float = stretched[:original_length]
+        else:
+            padded = np.zeros(original_length, dtype=np.float32)
+            padded[:len(stretched)] = stretched
+            wav_array_float = padded
+    
+    wav_array_float = np.clip(wav_array_float, -1.0, 1.0)
+    
+    if np.issubdtype(original_dtype, np.integer):
+        wav_array_final = (wav_array_float * max_int).astype(original_dtype)
+    else:
+        wav_array_final = wav_array_float
+    
+    return sample_rate, wav_array_final, wav_array_final.dtype
+
+
+def batch_augment_wav(wav_dir: str = None, count_per: int = 10):
+
+    if wav_dir is None:
+        raise TypeError(f"ERROR: wav_dir must be filled!")
+    
+    if wav_dir[-1] == "/": wav_dir = wav_dir[:-1]
+
+    wav_list = [f.name for f in Path(wav_dir).iterdir() if (f.is_file) and f.name[0] != '.']
+    tutils.create_directory(f"{wav_dir}/augmented")
+
+    for wav_file in wav_list:
+
+        wav_file = f"{wav_dir}/augmented/"
+
+        for i in range(count_per):
+            augmented_file_path = f"{wav_dir}/augmented/{wav_file[:-4]}_{i:03d}.wav"
+
+            sr, augmented_audio, dtype = augment_wav(wav_file)
+            final_audio = augmented_audio.astype(dtype)
+
+            write(augmented_file_path, sr, final_audio)
+
+            print(f"Saved augmented file: {augmented_file_path}")
+
+
+    
+
+
+
 if __name__ == "__main__":
-    cur_dir = "WAV_files/Distances/Spliced"
+    wav_dir = "/Users/tylercrimando/Downloads/ESC-50-master/audio/5-263831-A-6.wav"
     
-    test_path = "/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/Spliced"
+    try:
+        sr, augmented_audio, dtype = augment_wav(wav_dir)
+        
+        # Ensure dtype matches what 'write' expects
+        # If input was 16-bit int, output should be 16-bit int
+        final_audio = augmented_audio.astype(dtype)
+        
+        write("demo-augment.wav", sr, final_audio)
+        print(f"Saved augmented file: demo-augment.wav")
+        
+    except Exception as e:
+        print(f"Error: {e}")
 
-    # Get list of filenames only
-    test_list = [f.name for f in Path(test_path).iterdir() if (f.is_file() and "Hz" in f.name)]
-    test_list.sort()
-
-    # Create destination directory safely
-    dest_dir = f"{test_path}/averaged"
-    tutils.create_directory(dest_dir)
-
-    num_batches = len(test_list) // 3
+    #TODO: make this into a function
+    # cur_dir = "WAV_files/Distances/Spliced"
     
-    for i in range(num_batches):
-        # Get the 3 filenames for this batch
-        batch_filenames = test_list[3*i : 3*i+3]
-        
-        # Create full paths for reading ONLY (do not modify the original filenames list)
-        batch_paths = [f"{test_path}/{fname}" for fname in batch_filenames]
-        
-        # Determine the base name for the output file using the FIRST file's name
-        # Use .stem to remove extension cleanly, regardless of length
-        base_name = Path(batch_filenames[0]).stem[:-2]
-        
-        output_filename = f"{base_name}_average.wav"
-        output_full_path = f"{dest_dir}/{output_filename}"
-        
-        print(f"Averaging batch starting with: {base_name}")
+    # test_path = "/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/Spliced"
 
-        try:
-            wav_average(batch_paths, output_full_path)
-            print(f"Successfully saved to: {output_full_path}\n")
-        except Exception as e:
-            print(f"Error processing batch {i}: {e}\n")
+    # # Get list of filenames only
+    # test_list = [f.name for f in Path(test_path).iterdir() if (f.is_file() and "Hz" in f.name)]
+    # test_list.sort()
+
+    # # Create destination directory safely
+    # dest_dir = f"{test_path}/averaged"
+    # tutils.create_directory(dest_dir)
+
+    # num_batches = len(test_list) // 3
+    
+    # for i in range(num_batches):
+    #     # Get the 3 filenames for this batch
+    #     batch_filenames = test_list[3*i : 3*i+3]
+        
+    #     # Create full paths for reading ONLY (do not modify the original filenames list)
+    #     batch_paths = [f"{test_path}/{fname}" for fname in batch_filenames]
+        
+    #     # Determine the base name for the output file using the FIRST file's name
+    #     # Use .stem to remove extension cleanly, regardless of length
+    #     base_name = Path(batch_filenames[0]).stem[:-2]
+        
+    #     output_filename = f"{base_name}_average.wav"
+    #     output_full_path = f"{dest_dir}/{output_filename}"
+        
+    #     print(f"Averaging batch starting with: {base_name}")
+
+    #     try:
+    #         wav_average(batch_paths, output_full_path)
+    #         print(f"Successfully saved to: {output_full_path}\n")
+    #     except Exception as e:
+    #         print(f"Error processing batch {i}: {e}\n")

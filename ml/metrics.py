@@ -76,7 +76,7 @@ def ROC_curve(labels, probs, pname):
     # Reciever Operating Characteristics
     roc = roc_curve(labels, probs[:,1])
 
-    print(f"AUC: {auc}")
+    print(f"AUC: {auc:.6f}")
 
     plt.plot(roc[0], roc[1], color = 'r')
     plt.plot([0,1], [0,1], color = 'k', linestyle= ':')
