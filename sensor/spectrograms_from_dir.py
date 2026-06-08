@@ -455,7 +455,7 @@ def spectrograms_from_dir(wav_directory: str = None):
         RuntimeError: If any file fails to load or process (from underlying spectrogram function).
     """
 
-    all_wavs = [f.name for f in Path(wav_directory).iterdir() if f.is_file()]
+    all_wavs = [f.name for f in Path(wav_directory).iterdir() if f.is_file() and "DS" not in f.name] # very hacky
     all_wavs.sort()
 
     tutils.create_directory(f"{wav_directory}/spectrograms")

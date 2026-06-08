@@ -4,4 +4,5 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers, models
 
-print(1)
+binary_classes = {"object": 0, "no_object": 1}
+
