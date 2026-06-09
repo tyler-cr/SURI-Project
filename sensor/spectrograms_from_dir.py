@@ -51,7 +51,7 @@ def split_spectograms(list1_split: str = "mixed_PI", list2_split: str = "mixed_S
     Raises:
         ValueError: If the number of files matching each substring does not match.
     """
-    
+
     all_spectrograms = [f.name for f in Path("WAV_files/InvertPhase_vs_Stereo/Spectrograms").iterdir() if f.is_file()]
     all_spectrograms.sort()
 
@@ -431,7 +431,7 @@ def rename_and_splice_and_spectro(wav_dict: dict,
         data_image = c.create_spectrogram_from_wav(data_file_spliced, f"{wav_file[:-4]}_data", spectrogram_directory)
         noise_image = c.create_spectrogram_from_wav(noise_file_spliced, f"{wav_file[:-4]}_noise", spectrogram_directory)
 
-def spectrograms_from_dir(wav_directory: str = None):
+def spectrograms_from_dir(wav_directory: str = None, border: bool = True):
     """
     Generate spectrograms for all audio files in a directory.
     
@@ -466,7 +466,10 @@ def spectrograms_from_dir(wav_directory: str = None):
     for wav in all_wavs:
         print(f"Creating spectrogram for {wav}")
         wav_file = f"{wav_directory}/{wav}"
-        c.create_spectrogram_from_wav(wav_file_dir=wav_file, spectrogram_title=wav[:-4], spectrogram_filepath=spectrogram_directory)
+        if border: 
+            c.create_spectrogram_from_wav(wav_file_dir=wav_file, spectrogram_title=wav[:-4], spectrogram_filepath=spectrogram_directory)
+        else:
+            c.create_spectrogram_from_wav_borderless(wav_file_dir=wav_file, spectrogram_title=wav[:-4], spectrogram_filepath=spectrogram_directory)
 
     
 
@@ -480,7 +483,10 @@ def spectrograms_from_dir(wav_directory: str = None):
 
 if __name__ == "__main__":
 
-    spectrograms_from_dir("/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/Spliced/averaged", )
+    wav_directory = f"/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/Spliced"
+
+    w.batch_augment_wav(wav_dir=wav_directory)
+    spectrograms_from_dir(f"{wav_directory}/augmented", border=False)
 
     # wav_dict = tutils.dict_wav_from_csv("../docs/6-3-26_Recording_Notes.csv")
 

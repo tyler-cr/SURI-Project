@@ -12,7 +12,72 @@ LOG  = 0
 MEL  = 1
 BOTH = 2
 
-def create_spectrogram_from_wav(wav_file_dir: str, spectrogram_title: str, spectrogram_filepath: str, type: int = BOTH) -> str:
+def get_raw_spectro(wav_file: str):
+    y, sr = librosa.load(wav_file, sr=None)
+
+    S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, fmax=8000)
+    S_db = librosa.power_to_db(S, ref=np.max).astype(np.float32)
+
+    return S_db
+
+def get_raw_spectro_list(wav_dir: str):
+    all_wavs = np.array([get_raw_spectro(f) for f in sorted(Path(wav_dir).iterdir()) if f.suffix.lower() == ".wav"], dtype=np.float32)
+
+    all_wavs = all_wavs[..., np.newaxis]
+    
+    all_wavs = np.clip((all_wavs + 80) / 80, 0, 1).astype(np.float32)
+    return all_wavs
+        
+
+
+def create_spectrogram_from_wav_borderless(
+    wav_file_dir: str,
+    spectrogram_title: str,
+    spectrogram_filepath: str,
+    type: int = LOG
+) -> str:
+    y, sr = librosa.load(wav_file_dir)
+
+    if type > 2 or type < 0:
+        raise ValueError(f"type must be LOG(0), MEL(1), or BOTH(2). Received: {type}")
+
+    os.makedirs(spectrogram_filepath, exist_ok=True)
+
+    output_path = None
+
+    def save_spec(data, filename, y_axis):
+        fig = plt.figure(figsize=(10, 4), dpi=100, frameon=False)
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.set_axis_off()
+
+        librosa.display.specshow(
+            data,
+            sr=sr,
+            x_axis="time",
+            y_axis=y_axis,
+            ax=ax
+        )
+
+        path = os.path.join(spectrogram_filepath, filename)
+        fig.savefig(path, dpi=100, bbox_inches=None, pad_inches=0)
+        plt.close(fig)
+
+        print(f"Saved {path} to disk!")
+        return path
+
+    if type != MEL:
+        frequency_domain = librosa.stft(y)
+        spectrogram_in_db = librosa.amplitude_to_db(np.abs(frequency_domain), ref=np.max)
+        output_path = save_spec(spectrogram_in_db, f"{spectrogram_title}_log.png", "log")
+
+    if type != LOG:
+        S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, fmax=8000)
+        power_in_db = librosa.power_to_db(S, ref=np.max)
+        output_path = save_spec(power_in_db, f"{spectrogram_title}_mel.png", "mel")
+
+    return output_path
+
+def create_spectrogram_from_wav(wav_file_dir: str, spectrogram_title: str, spectrogram_filepath: str, type: int = LOG) -> str:
     """
     Generates and saves a log-scale spectrogram image from a WAV file using STFT.
 
@@ -143,4 +208,5 @@ def create_mel_spectrogram_from_wav(wav_file_dir: str, spectrogram_title: str, s
 
 if __name__ == "__main__":
     file_path = "/Users/tylercrimando/SURI-Project"
-    create_spectrogram_from_wav(wav_file_dir="/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/45cm_200Hz_20Amp_3.wav", spectrogram_title="test", spectrogram_filepath=file_path)
+    create_spectrogram_from_wav_borderless(wav_file_dir="/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/45cm_200Hz_20Amp_3.wav", spectrogram_title="test1", spectrogram_filepath=file_path)
+    create_spectrogram_from_wav(wav_file_dir="/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/45cm_200Hz_20Amp_3.wav", spectrogram_title="test2", spectrogram_filepath=file_path)
