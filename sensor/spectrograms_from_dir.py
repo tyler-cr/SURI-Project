@@ -6,6 +6,7 @@ import sys
 import convert_wav_to_spectro as c
 import wav_file_functions as w
 import interpret_images as interpret
+import numpy as np
 
 sys.path.insert(1, "/Users/tylercrimando/SURI-Project/utils")
 
@@ -471,7 +472,13 @@ def spectrograms_from_dir(wav_directory: str = None, border: bool = True):
         else:
             c.create_spectrogram_from_wav_borderless(wav_file_dir=wav_file, spectrogram_title=wav[:-4], spectrogram_filepath=spectrogram_directory)
 
+def get_raw_spectro_list(wav_dir: str):
+    all_wavs = np.array([c.get_raw_spectro(f) for f in sorted(Path(wav_dir).iterdir()) if f.suffix.lower() == ".wav"], dtype=np.float32)
+
+    all_wavs = all_wavs[..., np.newaxis]
     
+    all_wavs = np.clip((all_wavs + 80) / 80, 0, 1).astype(np.float32)
+    return all_wavs   
 
 
 
@@ -483,15 +490,14 @@ def spectrograms_from_dir(wav_directory: str = None, border: bool = True):
 
 if __name__ == "__main__":
 
-    wav_directory = f"/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/Spliced"
+    npy_file_path = "/Users/tylercrimando/SURI-Project/ml/npy_files"
+    augmented_dir_path = "sensor/WAV_files/Distances/Spliced/augmented"
 
-    w.batch_augment_wav(wav_dir=wav_directory)
-    spectrograms_from_dir(f"{wav_directory}/augmented", border=False)
+    print(f"grabbing list of raw spectrogram data from {augmented_dir_path}... please be patient!")
+    raw_spectro = get_raw_spectro_list(augmented_dir_path)
 
-    # wav_dict = tutils.dict_wav_from_csv("../docs/6-3-26_Recording_Notes.csv")
-
-    # rename_and_splice_and_spectro(rename_or_copy=tutils.RENAME, wav_dict=wav_dict, splice_time=30, wav_directory="WAV_files/Distances")
-
+    print(f"saving list of raw spectrogram data into npy file... please be patient!")
+    np.save(f"{npy_file_path}/distance_noise_vs_sound_spectros.npy", raw_spectro)
 
 
     # NOTE: THIS IS OLD CODE BEFORE ME USING CSVS FOR GRABBING WAVS. KEEPING FOR NOW
@@ -520,18 +526,3 @@ if __name__ == "__main__":
     # create_large_compare_directory(list1_split="mixed_PI", list2_split="mixed_Stereo", new_dir="Stereo_vs_Mono_Comparisons")
 
     # create_large_compare_directory(list1_split="data", list2_split="noise", new_dir="Data_vs_Noise_Comparisons")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

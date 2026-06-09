@@ -9,7 +9,6 @@ import random
 import numpy as np
 from pathlib import Path
 from PIL import Image
-from tqdm import tqdm
 
 binary_classes = {
                     "object_binary" : {"object": 0, "no_object": 1},
@@ -27,10 +26,13 @@ if __name__ == "__main__":
 
     print("creating labels np.array... please be patient!\n")
     #zero for when "noise" in wav file, one when "data" in wav file
-    labels = np.array([(0 if "noise" in f.name else 1) for f in sorted(Path(file_path).iterdir()) if f.suffix.lower() == ".wav"], dtype=np.bool)
+    labels = np.array([(0 if "noise" in f.name else 1) for f in sorted(Path(file_path).iterdir()) if f.suffix.lower() == ".wav"], dtype=bool)
     
+    print(labels)
+
     print("saving labels np.array... please be patient!\n")
-    np.save(f"{npy_file_path}/distance_labels_noise_vs_sound.npy", labels)
+    np.save(f"{npy_file_path}/labels_noise_vs_sound_labels.npy", labels)
+
     # spectrogram_dir = "/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/Spliced/augmented/spectrograms"
 
     # all_images = [f for f in Path(spectrogram_dir).iterdir() if (f.suffix in [".png", ".jpg", ".jpeg"] and "mel" not in f.name)]

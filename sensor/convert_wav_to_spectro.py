@@ -19,14 +19,6 @@ def get_raw_spectro(wav_file: str):
     S_db = librosa.power_to_db(S, ref=np.max).astype(np.float32)
 
     return S_db
-
-def get_raw_spectro_list(wav_dir: str):
-    all_wavs = np.array([get_raw_spectro(f) for f in sorted(Path(wav_dir).iterdir()) if f.suffix.lower() == ".wav"], dtype=np.float32)
-
-    all_wavs = all_wavs[..., np.newaxis]
-    
-    all_wavs = np.clip((all_wavs + 80) / 80, 0, 1).astype(np.float32)
-    return all_wavs
         
 
 
