@@ -51,6 +51,7 @@ def split_spectograms(list1_split: str = "mixed_PI", list2_split: str = "mixed_S
     Raises:
         ValueError: If the number of files matching each substring does not match.
     """
+    
     all_spectrograms = [f.name for f in Path("WAV_files/InvertPhase_vs_Stereo/Spectrograms").iterdir() if f.is_file()]
     all_spectrograms.sort()
 

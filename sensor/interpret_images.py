@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageOps
 from pathlib import Path
 import sys
+from enum import Enum
+import random
+import numpy as np
 
 sys.path.insert(1, "/Users/tylercrimando/SURI-Project/utils")
 
@@ -113,31 +116,112 @@ def large_image_compare(image1_path: str = "test1.png", image2_path: str = "test
     comp_path.unlink(missing_ok=True)
 
 
+def batch_image_crop(image_dir: str = None, crop: list | tuple | int = None):
+    """
+    Batch crops all images in a directory by specified margin amounts.
 
-#TODO
-def crop_image():
-    a=5
+    Args:
+        image_dir: Path to directory containing source images (.png, .jpg, .jpeg)
+        crop: Crop dimensions as either:
+              • int: Applies equal margin to all 4 sides
+              • list/tuple: [left_margin, top_margin, right_margin, bottom_margin]
 
-#TODO
-def convert_image_monochrome(color: tuple = ()):
-    print("TODO")
+    Returns:
+        None (images saved directly to <image_dir>/cropped/)
+
+    Notes:
+        • Output files named: {original_stem}_cropped.{ext}
+        • Creates 'cropped' subdirectory automatically
+        • Supports extensions: .png, .jpg, .jpeg
+        • Uses margin-based indexing (removes pixels from edges)
+    
+    Raises:
+        FileNotFoundError: If image_dir doesn't exist
+        ValueError: If crop parameters exceed image dimensions
+        TypeError: If crop has wrong type
+    """
+
+    #this looks goofy if you don't know programming
+    if type(crop) == int: crop = [crop, crop, crop, crop]
+
+    if image_dir[-1] == "/": image_dir = image_dir[:-1]
+
+    cropped_dir = f"{image_dir}/cropped"
+
+    tutils.create_directory(f"{image_dir}/cropped")
+    
+    #No need to handle other file extensions... this should be fine!
+    all_images = [f for f in Path(image_dir).iterdir() if f.suffix in [".png", ".jpg", ".jpeg"]]
+
+    for image_file in all_images:
+        img = Image.open(image_file)
+
+        crop = [crop[0], crop[1], img.width-crop[2], img.height-crop[3]]
+
+        img = img.crop(crop)
+
+        print(cropped_dir)
+        print(image_file)
+
+        new_image_file_path = f"{cropped_dir}/{image_file.stem}_cropped{image_file.suffix}"
+
+        print(f"New Cropped Image saved at: {new_image_file_path}")
+        img.save(new_image_file_path)
+        
+
+
+#TODO: This is tremendously rudementary... make better (later)
+def convert_image_monochrome(image_file: str, color: tuple = None):
+    """
+    Converts an image to monochrome with optional custom color mapping.
+
+    Args:
+        image_file: Path to input image file (.png, .jpg, .jpeg)
+        color: RGB tuple for tinting grayscale image (e.g., (255, 128, 0))
+               If None, saves as standard black-and-white
+
+    Returns:
+        None (images saved directly to same directory as source)
+
+    Notes:
+        • Grayscale conversion via PIL 'L' mode
+        • Custom colors use ImageOps.colorize() mapping: 
+          Black → Color ← White
+        • Output filenames:
+          - No color: {original_stem}_monochrome_bw.{ext}
+          - With color: {original_stem}_monochrome_{R}{G}{B}.{ext}
+        • Colored versions auto-display after saving
+    
+    Raises:
+        FileNotFoundError: If image_file doesn't exist
+        TypeError: If color has wrong type or length ≠ 3
+        OSError: If file cannot be written
+    """
+
+    if color is None:
+        print(f"NOTE: No color passed in for {image_file} monochrome convert. Defaulting to BnW!")
+
+    img = Image.open(image_file).convert('L')
+
+    if color is None: 
+        img.save(f"{image_file[:-4]}_monochrome_bw{image_file.split('.')[0]}")
+        return
+    
+    newimg = ImageOps.colorize(img, mid = color, black="black", white="white")
+    newimg.save(f"{image_file[:-4]}_monochrome_{color[0]}{color[1]}{color[2]}{image_file[-4:]}")
+    newimg.show()
+
+
 
 if __name__ == "__main__":
 
-    file_path = "/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/Spliced/averaged/spectrograms"
+    image_dir="/Users/tylercrimando/SURI-Project/test_images/test_image.png"
 
-    all_spectros = [f.name for f in Path(file_path).iterdir() if f.is_file()]
+    convert_image_monochrome(image_file=image_dir, color=(255,255,0))
+    exit()
 
-    noise_spectros = [noise for noise in all_spectros if "noise" in noise]
-    data_spectros = [data for data in all_spectros if "data" in data]
+    crop_arr = np.random.randint(25, size=4)
+    print(crop_arr)
 
-    noise_spectros.sort()
-    data_spectros.sort()
-
-    tutils.create_directory(f"{file_path}/compares")
-
-    for i in range(len(noise_spectros)):
-        print(f"creating image #{i+1} out of {len(noise_spectros)}")
-        spectro_name = f"{noise_spectros[i][6:-4]}_noise_vs_data.png"
-        large_image_compare(f"{file_path}/{data_spectros[i]}", f"{file_path}/{noise_spectros[i]}", f"{file_path}/compares/{spectro_name}")
+    batch_image_crop(image_dir="/Users/tylercrimando/SURI-Project/test_images", crop=crop_arr)
     

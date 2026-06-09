@@ -209,6 +209,30 @@ def phaseinvert_AudioSegment(audio: AudioSegment) -> AudioSegment:
     return effects.invert_phase(audio)
 
 def augment_wav(wav_file: str):
+    """
+    Applies stochastic audio augmentation (time shift, noise, time stretch) to a WAV file.
+
+    Args:
+        wav_file: Path to input .wav file
+
+    Returns:
+        tuple: (sample_rate, augmented_array, dtype)
+            • sample_rate: Original sample rate preserved
+            • augmented_array: Float32 or original integer array with augmentations applied
+            • dtype: Data type matching the input (int or float)
+
+    Notes:
+        • Time Shift: 67% chance of random shift (-30% to +30% duration), wrapped via np.roll
+        • Gaussian-like Noise: 40% chance of adding noise (amplitude ~10% of signal range)
+        • Time Stretch: 40% chance of stretching/speeding up (rate 0.5–1.5x), trimmed or padded to match original length
+        • Output clamped to [-1.0, 1.0] before converting back to original dtype
+        • Handles both integer and floating-point input formats transparently
+    
+    Raises:
+        FileNotFoundError: If wav_file doesn't exist
+        ValueError: If audio file format is unsupported or corrupted
+    """
+
     sample_rate, wav_array = wavfile.read(wav_file)
     original_dtype = wav_array.dtype
     original_length = len(wav_array)
@@ -252,6 +276,28 @@ def augment_wav(wav_file: str):
 
 
 def batch_augment_wav(wav_dir: str = None, count_per: int = 10):
+    """
+    Generates multiple augmented copies of all WAV files in a directory.
+
+    Args:
+        wav_dir: Path to directory containing source .wav files
+        count_per: Number of augmented versions to create per input file (default 10)
+
+    Returns:
+        None (files saved directly to <wav_dir>/augmented/)
+
+    Notes:
+        • Output naming: {original_name}_{001-999}.wav
+        • Applies time shift, noise, and time stretch via augment_wav()
+        • Skips hidden files (starting with '.')
+        • Creates 'augmented' subdirectory automatically
+    
+    Raises:
+        TypeError: If wav_dir is None
+        FileNotFoundError: If wav_dir doesn't exist
+        OSError: If output directory cannot be created
+        ValueError: If audio file format unsupported or corrupt
+    """
 
     if wav_dir is None:
         raise TypeError(f"ERROR: wav_dir must be filled!")

@@ -88,7 +88,32 @@ def create_spectrogram_from_wav(wav_file_dir: str, spectrogram_title: str, spect
     return output_path
 
 #Testing mel spectrograms to maybe use these instead?
-def create_mel_spectrogram_from_wav(wav_file_dir: str, spectrogram_title: str, spectrogram_filepath: str):  
+#UPDATE: because of what will likely be predominately low frequency agitation on our end, this will likey go unused.
+def create_mel_spectrogram_from_wav(wav_file_dir: str, spectrogram_title: str, spectrogram_filepath: str):
+    """
+    Generates a mel-spectrogram visualization from an audio WAV file.
+
+    Args:
+        wav_file_dir: Path to input .wav file
+        spectrogram_title: Title text displayed on the plot
+        spectrogram_filepath: Directory path where output PNG will be saved
+
+    Returns:
+        str: Full filepath of saved .png image
+
+    Notes:
+        • Mel scale: 128 frequency bins, max frequency 8000 Hz
+        • Power converted to dB scale for visualization
+        • Output image has white background
+        • Resolution: standard figure size (10×4 inches)
+        • File format: PNG
+    
+    Raises:
+        FileNotFoundError: If wav_file_dir doesn't exist
+        ValueError: If audio file format invalid or corrupted
+        OSError: If spectrogram_filepath cannot be created
+    """
+          
     frequency, sample_rate = librosa.load(wav_file_dir)
     
     S = librosa.feature.melspectrogram(y = frequency, sr=sample_rate, n_mels=128, fmax=8000)
