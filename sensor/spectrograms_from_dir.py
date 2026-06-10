@@ -8,7 +8,8 @@ import wav_file_functions as w
 import interpret_images as interpret
 import numpy as np
 
-sys.path.insert(1, "/Users/tylercrimando/SURI-Project/utils")
+#Need to find a way to handle this being machine dependent... ugh
+sys.path.insert(1, "/mnt/c/Users/Tyler/Desktop/SURI-Project/utils")
 
 import tutils
 
@@ -489,6 +490,9 @@ def get_raw_spectro_list(wav_dir: str):
 
 
 if __name__ == "__main__":
+
+    print("test")
+    exit()
 
     npy_file_path = "/Users/tylercrimando/SURI-Project/ml/npy_files"
     augmented_dir_path = "sensor/WAV_files/Distances/Spliced/augmented"

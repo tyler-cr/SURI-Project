@@ -20,6 +20,10 @@ binary_classes = {
 
 if __name__ == "__main__":
     
+    print("test")
+
+    exit()
+
     file_path = "/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/Spliced/augmented"
 
     npy_file_path = "/Users/tylercrimando/SURI-Project/ml/npy_files"

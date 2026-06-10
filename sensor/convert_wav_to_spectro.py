@@ -199,6 +199,10 @@ def create_mel_spectrogram_from_wav(wav_file_dir: str, spectrogram_title: str, s
 
 
 if __name__ == "__main__":
+
+    print("test")
+    exit()
+
     file_path = "/Users/tylercrimando/SURI-Project"
     create_spectrogram_from_wav_borderless(wav_file_dir="/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/45cm_200Hz_20Amp_3.wav", spectrogram_title="test1", spectrogram_filepath=file_path)
     create_spectrogram_from_wav(wav_file_dir="/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/45cm_200Hz_20Amp_3.wav", spectrogram_title="test2", spectrogram_filepath=file_path)

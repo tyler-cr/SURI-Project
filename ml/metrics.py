@@ -175,10 +175,10 @@ def confusion_matrix(y_test, y_predict, n=10):
 
 if __name__ == "__main__":
 
-    con_mat = np.zeros((10,10), dtype="uint8")
+    con_mat = np.zeros((10,10))
     for x in range(10):
         for y in range(10):
             for z in range(10):
-                con_mat[x][y][z] = random.randint(0,9)
+                con_mat[x][y] = random.randint(0,9)
 
     print(con_mat)

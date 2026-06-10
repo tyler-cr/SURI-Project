@@ -5,7 +5,8 @@ import sys
 import random
 import numpy as np
 
-sys.path.insert(1, "/Users/tylercrimando/SURI-Project/utils")
+#This is really finnicky... need to fix.
+sys.path.insert(1, "/mnt/c/Users/Tyler/Desktop/SURI-Project/utils")
 
 import tutils
 
@@ -213,6 +214,9 @@ def convert_image_monochrome(image_file: str, color: tuple = None):
 
 
 if __name__ == "__main__":
+
+    print("test")
+    exit()
 
     image_dir="/Users/tylercrimando/SURI-Project/test_images/test_image.png"
 

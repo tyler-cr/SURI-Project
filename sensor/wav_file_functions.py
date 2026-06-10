@@ -325,6 +325,10 @@ def batch_augment_wav(wav_dir: str = None, count_per: int = 10):
 
 
 if __name__ == "__main__":
+
+    print("test")
+    exit()
+
     wav_dir = "/Users/tylercrimando/Downloads/ESC-50-master/audio/5-263831-A-6.wav"
     
     batch_augment_wav("/Users/tylercrimando/Desktop/demo")

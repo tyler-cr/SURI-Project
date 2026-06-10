@@ -1,0 +1,12 @@
+None of these really work... ugh. They are kinda easy to follow though and should be a
+(very) lose installation guide. Apologies
+
+Honesly on windows systems I recommend just using wsl and then doing the linux setup
+
+ALSO: at least currently with the laptop testbed setup, you will need to download ni-visa
+    
+    NOTE: annoyingly, they require you to sign-up before you can download :(
+
+    Here's a link for that: https://www.ni.com/en/support/downloads/drivers/download.ni-visa.html?srsltid=AfmBOoo3gjdWhvlcGasjVWzLJ7gH2MjcX1sJpDEtR0c1ZA3_EH7lYIPY
+
+    
