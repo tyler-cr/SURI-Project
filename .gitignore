@@ -2,4 +2,5 @@
 *.WAV
 *.png
 Miniconda*
-.DS_store
+*.DS_Store
+*.npy

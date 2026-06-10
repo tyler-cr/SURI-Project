@@ -78,7 +78,7 @@ Modular system consisting of three distinct subsystems that communicate via ROS2
 
 ├── requirements.txt      # Python dependencies
 
-├── setup.sh              # Installation script for ROS2 and Pi dependencies
+├── /setup                # System specific setup scripts for creating conda environment and neccesary libraries
 
 └── README.md
 

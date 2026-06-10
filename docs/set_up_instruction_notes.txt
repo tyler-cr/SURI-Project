@@ -1,0 +1,8 @@
+make an shell script that:
+	1. Downloads conda (comes with python)
+	2. Creates a SURI_project environment
+	3. Activates that environment
+	4. In that environment, downloads librosa library (pain in the butt)
+	5. Pip installs: numpy, sklearn, matplotlib, tensorflow, PIL, scipy
+	6. Print instructions
+	7. Mention specific file limitations 

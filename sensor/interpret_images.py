@@ -2,7 +2,6 @@
 from PIL import Image, ImageChops, ImageOps
 from pathlib import Path
 import sys
-from enum import Enum
 import random
 import numpy as np
 
