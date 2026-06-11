@@ -320,18 +320,11 @@ def batch_augment_wav(wav_dir: str = None, count_per: int = 10):
             print(f"Saved augmented file: {augmented_file_path}")
 
 
-    
-
 
 
 if __name__ == "__main__":
 
-    print("test")
-    exit()
-
-    wav_dir = "/Users/tylercrimando/Downloads/ESC-50-master/audio/5-263831-A-6.wav"
-    
-    batch_augment_wav("/Users/tylercrimando/Desktop/demo")
+    a = 5
 
     #TODO: make this into a function
     # cur_dir = "WAV_files/Distances/Spliced"

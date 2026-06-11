@@ -5,11 +5,50 @@
 import pyvisa
 import numpy as np
 import time
+import csv
 
 rm = pyvisa.ResourceManager()
 
+WAV_TYPES = ["SINE","SQUARE","RAMP","NOISE"]
+
 #Note: this may change
 RESOURCE = "USB0::0xF4EC::0x1102::SDG2XFBX7R1477::INSTR"
+
+
+def csv_to_list(csv_file_path: str = None) -> list:
+    wav_list = []
+    
+    if csv_file_path is None:
+        raise TypeError(f"ERROR: csv_file_path cannot be none! Recieved csv_file_path: {csv_file_path}")
+
+    with open(csv_file_path, mode='r') as file:
+        reader = csv.reader(file)
+
+        for row in reader:
+            wav_type = "_".join(row)
+            wav_list.append(wav_type)
+
+    return wav_list
+
+
+
+    
+
+#TODO: honestly non sine waves might be out of the scope for this project...
+def create_wav(wav_type: str="SINE", freq: int = None, amp: float = None):
+    if wav_type not in WAV_TYPES:
+        raise ValueError(f"ERROR: wav type must be SINE, SQUARE, RAMP, or NOISE. Recieved: {wav_type}")
+
+    if freq is None: 
+        print("create_wav: freq variable not specified... Defaulting to 100Hz")
+        freq = 100
+    if amp is None:
+        print("create_wav: amp variable not specified... Defaulting to 20Vpp")
+        amp = 20
+
+    
+
+
 
 def connect(resource=RESOURCE):
     rm = pyvisa.ResourceManager()
@@ -52,16 +91,8 @@ def trigger_basic(sdq, ch=1):
 
 if __name__ == "__main__":
 
-    ch = 1
-    freq = 200
-    amp = 20
+    #print(csv_to_list("C:/Users/Tyler/Desktop/SURI-Project/CSV_To_Wav-Sheet1.csv"))
 
-    sdg = connect()
-    
-    configure_regular(sdg=sdg, freq=freq, amp=amp)
-    trigger_basic(sdg)
-    
-    time.sleep(1)
+    test = create_sine(freq = 500, amp = 20)
 
-    output(sdg, False)
-
+    print(test)

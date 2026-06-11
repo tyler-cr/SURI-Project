@@ -3,8 +3,9 @@
 import os
 import csv
 import shutil
+import pathlib
 
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 RENAME = 0
 COPY = 1
@@ -145,8 +146,16 @@ def batch_rename_and_copy(csv_file_path: str = None, directory_of_files: str = N
         
         print(f"{action_str} {wav_file} to {detail}.wav")
 
+#ugh even with this you still need to put the string as raw...
+def convert_windows_filepath(file_path: str = None) -> str:
+    return PureWindowsPath(file_path).as_posix()
+
+
+
 if __name__ == "__main__":
-    print("TESTING batch_rename_csv\n")
+    
+    demo_path = r"C:\windows\needs\better\files"
+    print(convert_windows_filepath(demo_path))
 
 
     #batch_rename_and_copy(action= COPY, csv_file_path= "docs/6-3-26_Recording_Notes.csv", directory_of_files="/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances")
