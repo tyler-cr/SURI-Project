@@ -21,28 +21,47 @@ def connect(resource=RESOURCE):
 
 def set_load(sdg, load=50, ch=1):
     sdg.write(f"C{ch}:OUTP LOAD,{load}")
-    print(sdg.query(f"C{ch}:OUTP?"))
 
-def upload_normalized(sdg, name, samples, freq, amp=2.0, offset=0.0, phase=0.0, ch=1):
-    samples = np.asarray(samples, dtype=np.float64)
-    samples = np.clip(samples, -1.0, 1.0)
-    data = np.round(samples * 32767).astype("<i2").tobytes()
-    cmd = f"C{ch}:WVDT WVNM,{name},FREQ,{freq},AMPL,{amp},OFST,{offset},PHASE,{phase},WAVEDATA,".encode("ascii")
-    sdg.write_raw(cmd + data)
-    sdg.write(f"C{ch}:ARWV NAME,{name}")
-    sdg.write(f"C{ch}:BSWV WVTP,ARB,FRQ,{freq},AMP,{amp},OFST,{offset},PHSE,{phase}")
+def configure_regular(sdg, freq=100, amp=10.0, offset=0.0, phase=0.0, ch=1):
+    sdg.write(f"C{ch}:BSWV WVTP,SINE,FRQ,{freq},AMP,{amp},OFST,{offset},PHSE,{phase}")
 
 def output(sdg, state, ch=1):
     sdg.write(f"C{ch}:OUTP {'ON' if state else 'OFF'}")
 
-sdg = connect()
+def configure_burst(sdg, ch=1, freq=200, amp=20, seconds=1.0):
+    cycles = round(freq * seconds)
 
-t = np.linspace(0, 1, 16384, endpoint=False)
-samples = np.sin(2 * np.pi * 5 * t)
+    sdg.write(f"C{ch}:OUTP OFF")
+    sdg.write(f"C{ch}:BTWV STATE,ON")
+    sdg.write(f"C{ch}:BTWV GATE_NCYC,NCYC")
+    sdg.write(f"C{ch}:BTWV TRSR,MAN")
+    sdg.write(f"C{ch}:BTWV TIME,{cycles}")
+    sdg.write(f"C{ch}:BTWV CARR,WVTP,SINE")
+    sdg.write(f"C{ch}:BTWV CARR,FRQ,{freq}")
+    sdg.write(f"C{ch}:BTWV CARR,AMP,{amp}")
+    sdg.query("*OPC?")
+    sdg.write(f"C{ch}:OUTP ON")
+    sdg.query("*OPC?")
 
-#still fenangling with a fair bit
-set_load(sdg)
-upload_normalized(sdg, "wave1", samples, freq=100, amp=10)
-output(sdg, True)
-time.sleep(5)
-output(sdg, False)
+
+def trigger_burst(sdg, ch=1):
+    sdg.write(f"C{ch}:BTWV MTRIG")
+
+def trigger_basic(sdq, ch=1):
+    sdg.write(f"C{ch}:OUTP ON")
+
+if __name__ == "__main__":
+
+    ch = 1
+    freq = 200
+    amp = 20
+
+    sdg = connect()
+    
+    configure_regular(sdg=sdg, freq=freq, amp=amp)
+    trigger_basic(sdg)
+    
+    time.sleep(1)
+
+    output(sdg, False)
+
