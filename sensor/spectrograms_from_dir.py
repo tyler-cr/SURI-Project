@@ -474,19 +474,32 @@ def spectrograms_from_dir(wav_directory: str = None, border: bool = True):
             c.create_spectrogram_from_wav_borderless(wav_file_dir=wav_file, spectrogram_title=wav[:-4], spectrogram_filepath=spectrogram_directory)
 
 def get_raw_spectro_list(wav_dir: str):
+    """
+    Loads, normalizes, and stacks mel-spectrograms from all WAV files in a directory.
+    
+    Reads every .wav file in the specified path (sorted alphabetically), generates 
+    raw mel-spectrograms using `c.get_raw_spectro()`, applies min-max normalization 
+    (shifting by +80dB and scaling by 1/80 to clamp between [0, 1]), and adds a 
+    channel dimension for batch processing.
+    
+    Args:
+        wav_dir (str): Path to directory containing .wav audio files.
+        
+    Returns:
+        np.ndarray: Normalized spectrogram batch with shape (n_samples, n_mels, time_steps, 1).
+                    Values are float32 in range [0.0, 1.0].
+                    
+    Raises:
+        FileNotFoundError: If no .wav files are found in the directory.
+        AttributeError: If `c.get_raw_spectro` is not defined or accessible in the current context.
+    """
+
     all_wavs = np.array([c.get_raw_spectro(f) for f in sorted(Path(wav_dir).iterdir()) if f.suffix.lower() == ".wav"], dtype=np.float32)
 
     all_wavs = all_wavs[..., np.newaxis]
     
     all_wavs = np.clip((all_wavs + 80) / 80, 0, 1).astype(np.float32)
     return all_wavs   
-
-
-
-    
-    
-
-
 
 
 if __name__ == "__main__":

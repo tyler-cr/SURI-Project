@@ -13,6 +13,18 @@ MEL  = 1
 BOTH = 2
 
 def get_raw_spectro(wav_file: str):
+    """
+    Extracts a raw mel-spectrogram from a WAV file as decibel-scaled data.
+    
+    Loads audio without resampling, computes 128-band mel-spectrogram 
+    (capped at 8kHz), converts to dB scale, and returns as float32 NumPy array.
+    
+    Args:
+        wav_file (str): Path to input WAV file.
+        
+    Returns:
+        np.ndarray: Mel-spectrogram in dB with shape (n_mels, time_frames).
+    """
     y, sr = librosa.load(wav_file, sr=None)
 
     S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, fmax=8000)
@@ -28,6 +40,27 @@ def create_spectrogram_from_wav_borderless(
     spectrogram_filepath: str,
     type: int = LOG
 ) -> str:
+    
+    """
+    Generates borderless spectrogram image(s) from a WAV file without axes or colorbar.
+    
+    Creates either log-STFT, mel-spectrogram, or both as transparent PNGs with 
+    no figure frame. Uses internal helper for saving. Output saved to specified directory.
+    
+    Args:
+        wav_file_dir (str): Path to input WAV file.
+        spectrogram_title (str): Base name for output filename(s).
+        spectrogram_filepath (str): Directory path for output images.
+        type (int): Spectrogram type—LOG(0), MEL(1), or BOTH(2). Default is LOG.
+        
+    Returns:
+        str: Absolute path to the last saved image file.
+        
+    Raises:
+        ValueError: If type parameter is not 0, 1, or 2.
+        FileNotFoundError: If input WAV file does not exist.
+    """
+
     y, sr = librosa.load(wav_file_dir)
 
     if type > 2 or type < 0:

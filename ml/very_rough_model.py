@@ -14,10 +14,21 @@ binary_classes = {
 
 BATCH_SIZE = 16
 EPOCHS = 16
-NSAMP = (128, 2813, 1) #TODO
+NSAMP = (128, 2813, 1) #TODO: Automate this
 KERNEL_SIZE = 3
 
 def create_model():
+    """
+    Constructs and compiles a sequential CNN model for binary classification.
+    
+    The architecture consists of three blocks of Conv2D layers with MaxPooling 
+    and Dropout, followed by GlobalAveragePooling, Dense layers, and a sigmoid 
+    output. Optimized for Adam with binary crossentropy loss.
+    
+    Returns:
+        keras.Model: Compiled Keras Sequential model ready for training.
+    """
+
     model = keras.Sequential()
     model.add(layers.Input(shape=NSAMP))
     model.add(layers.Conv2D(16, kernel_size = KERNEL_SIZE, activation='relu'))
@@ -50,15 +61,47 @@ def create_model():
     return model
 
 def fit_model(model, x_train, y_train, verbose: int = 0):
+    """
+    Trains the provided model on the given dataset.
+    
+    Args:
+        model (keras.Model): The compiled model to train.
+        x_train (np.ndarray): Training input data.
+        y_train (np.ndarray): Training labels (binary).
+        verbose (int): Verbosity mode for training logs (0=silent).
+        
+    Returns:
+        tf.keras.callbacks.History: Object containing training history metrics.
+    """
     print("beginning to fit model...")
     history = model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose = verbose)
     return history
 
 def score_model(model, x_test, y_test, verbose: int = 0):
-    print("beginning to score model")
+    """
+    Evaluates the model's performance on test data.
+    
+    Args:
+        model (keras.Model): The trained model to evaluate.
+        x_test (np.ndarray): Test input data.
+        y_test (np.ndarray): Test labels.
+        verbose (int): Verbosity mode for evaluation logs.
+        
+    Returns:
+        float: List containing [loss, accuracy] on the test set.
+    """
+    print("beginning to score model...")
     return model.evaluate(x_test, y_test, verbose=verbose)
 
 def save_model(model, file_dir: str):
+    """
+    Saves the model to the specified file path in Keras format.
+    
+    Args:
+        model (keras.Model): The model to persist to disk.
+        file_dir (str): Destination filepath (e.g., 'model.keras').
+    """
+    print("saving model...")
     model.save(file_dir)
 
 
