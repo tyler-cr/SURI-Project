@@ -15,7 +15,7 @@ WAV_TYPES = ["SINE","SQUARE","RAMP","NOISE"]
 RESOURCE = "USB0::0xF4EC::0x1102::SDG2XFBX7R1477::INSTR"
 
 
-def csv_to_list(csv_file_path: str = None) -> list:
+def csv_to_str_list(csv_file_path: str = None) -> list:
     wav_list = []
     
     if csv_file_path is None:
@@ -30,8 +30,65 @@ def csv_to_list(csv_file_path: str = None) -> list:
 
     return wav_list
 
+def csv_to_dict_list(csv_file_path: str = None) -> list:
+    with open(csv_file_path, mode = 'r') as file:
+        csv_reader = csv.DictReader(file)
+        dict_list = list(csv_reader)
+    return dict_list
+
+def batch_siglent_run(sdg, dict_list: dict, buffer: int = 4):
+    input("WAIT: Please press ENTER on your keyboard and start the recording at the same time")
+    
+    prev_geo_loc = "NEAR"
+    prev_wav_loc = "MID"
+    prev_cav = "NO"
+
+    print(f"Reminder of dict_list order: {dict_list}")
+    
+    for instruction in dict_list:
+
+        samples = instruction["SAMPLES"]
+        time_per = instruction["TIME"]
+        
+        cur_geo_loc = instruction["GEO_LOC"]
+        cur_wav_loc = instruction["WAVE_LOC"]
+        cur_cav     = instruction["CAVITY"]
+
+        if prev_geo_loc != cur_geo_loc:
+            input(f"WAIT: GEOPHONE LOCATION INSTRUCTION CHANGED. PREV:{prev_geo_loc}. CUR:{cur_geo_loc}\n PLEASE SWITCH TO DESIGNATED LOCATION AND PRESS 'ENTER' TO CONTINUE")
+            input("please press 'ENTER' again to continue")
+            prev_geo_loc = cur_geo_loc
+
+        if prev_wav_loc != cur_wav_loc:
+            input(f"WAIT: WAVE GENERATOR LOCATION INSTRUCTION CHANGED. PREV:{prev_wav_loc}. CUR:{cur_wav_loc}\n PLEASE SWITCH TO DESIGNATED LOCATION AND PRESS 'ENTER' TO CONTINUE")
+            input("please press 'ENTER' again to continue")
+            prev_wav_loc = cur_wav_loc
+
+        if prev_cav != cur_cav:
+            input(f"WAIT: CAVITY INSTRUCTION CHANGED. PREV:{prev_cav}. CUR:{cur_cav}\n PLEASE SWITCH TO DESIGNATED LOCATION AND PRESS 'ENTER' TO CONTINUE")
+            input("please press 'ENTER' again to continue")
+            prev_geo_loc = cur_geo_loc
+
+        
+        print(f"Beginning {cur_cav} cavity {cur_wav_loc} wav loc {cur_geo_loc} geo loc {instruction['FREQ']}Hz Freq {instruction['AMP']}Vpp Amp")
+        for i in range(int(samples)):
+            time.sleep(buffer)
+            dict_to_siglent_instruction(sdg, instruction)
+            output(sdg, True)
+            time.sleep(int(time_per)*1.05) # 1.05 is for a buffer. Python continues before the machine actually begins running, but we don't need to be absurdly accurate
+            output(sdg, False)
+
+    input("Please end recording on field recorder and then press any button to continue")
+    print("Hopefully this should have worked!")
 
 
+        
+
+def dict_to_siglent_instruction(sdg, instruction_dict: dict)-> str:
+    configure_regular(sdg,
+                      freq=instruction_dict["FREQ"],
+                      amp=instruction_dict["AMP"]
+                      )
     
 
 #TODO: honestly non sine waves might be out of the scope for this project...
@@ -93,6 +150,10 @@ if __name__ == "__main__":
 
     #print(csv_to_list("C:/Users/Tyler/Desktop/SURI-Project/CSV_To_Wav-Sheet1.csv"))
 
-    test = create_sine(freq = 500, amp = 20)
+    test_file_path = "c:/Users/Tyler/Downloads/[TEST]CSV_TO_SIGLENT.csv"
 
-    print(test)
+    sdg = connect()
+
+    instruction_list = csv_to_dict_list(test_file_path)
+
+    batch_siglent_run(sdg, instruction_list)

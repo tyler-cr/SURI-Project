@@ -319,7 +319,18 @@ def batch_augment_wav(wav_dir: str = None, count_per: int = 10):
 
             print(f"Saved augmented file: {augmented_file_path}")
 
+#TODO: need to test!!!
+def downsample_wav_array(wav_file_dir: str , new_rate_in_kHz: int, save: bool = False, saved_dir: int = None):
+    sound_array, sample_rate = librosa.load(wav_file_dir, new_rate_in_kHz)
 
+    if save:
+        spliced_wav_file = wav_file_dir.split('/') 
+
+        saved_dir_file = f"{saved_dir}/{wav_file_dir[-1]}"
+
+        write(saved_dir_file, sample_rate, sound_array)
+    
+    return sound_array
 
 
 if __name__ == "__main__":

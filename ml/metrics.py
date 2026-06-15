@@ -3,8 +3,8 @@
 from math import sqrt
 import numpy as np
 from numpy.typing import NDArray
-from sklearn.metrics import roc_auc_score, roc_curve
-import matplotlib as plt
+#from sklearn.metrics import roc_auc_score, roc_curve
+#import matplotlib as plt
 
 import random
 
