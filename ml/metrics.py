@@ -21,21 +21,20 @@ def tally_predictions(classifier, test: NDArray, answer_key: NDArray) -> list:
     Returns:
         list: [true_positives, true_negatives, false_positives, false_negatives, accuracy_score]
     """
-
+    
     predictions = classifier.predict(test)
-    score = classifier.score(test,answer_key)
+    predictions = np.asarray(predictions).ravel()
+    predictions = (predictions >= 0.5).astype("int32")
 
-    true_positives = true_negatives = false_positives = false_negatives = 0
+    answer_key = np.asarray(answer_key).astype("int32").ravel()
 
-    for i in range(len(answer_key)):
-        if (predictions[i] == 0) and (answer_key[i] == 0): 
-            true_negatives += 1
-        elif (predictions[i] == 0) and (answer_key[i] == 1): 
-            false_negatives += 1
-        elif (predictions[i] == 1) and (answer_key[i] == 0): 
-            false_positives += 1
-        else:
-            true_positives += 1
+    true_positives = int(np.sum((predictions == 1) & (answer_key == 1)))
+    true_negatives = int(np.sum((predictions == 0) & (answer_key == 0)))
+    false_positives = int(np.sum((predictions == 1) & (answer_key == 0)))
+    false_negatives = int(np.sum((predictions == 0) & (answer_key == 1)))
+
+    score = float(np.mean(predictions == answer_key))
+
     return [true_positives, true_negatives, false_positives, false_negatives, score]
 
 # This still assumes a binary model
@@ -141,6 +140,7 @@ def ROC_curve(labels, probs, pname):
     plt.xlabel("FPR")
     plt.ylabel("TPR")
     plt.tight_layout(pad=0, w_pad=0, h_pad=0)
+    plt.show
     plt.savefig(pname, dpi=300)
 
 def confusion_matrix(y_test, y_predict, n=10):

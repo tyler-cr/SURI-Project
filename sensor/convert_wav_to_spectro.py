@@ -8,29 +8,37 @@ import os
 from PIL import Image
 from pathlib import Path
 
+
 LOG  = 0
 MEL  = 1
 BOTH = 2
 
-def get_raw_spectro(wav_file: str):
+def get_raw_spectro(wav_file: str, downsample_in_kHz: int = None):
     """
-    Extracts a raw mel-spectrogram from a WAV file as decibel-scaled data.
-    
-    Loads audio without resampling, computes 128-band mel-spectrogram 
-    (capped at 8kHz), converts to dB scale, and returns as float32 NumPy array.
-    
+    Extracts a raw STFT spectrogram from a WAV file as decibel-scaled data.
+
+    Loads audio without resampling, computes the linear STFT spectrogram,
+    converts to dB scale, and returns as float32 NumPy array.
+
     Args:
         wav_file (str): Path to input WAV file.
-        
+
     Returns:
-        np.ndarray: Mel-spectrogram in dB with shape (n_mels, time_frames).
+        np.ndarray: Raw spectrogram in dB with shape (freq_bins, time_frames).
     """
-    y, sr = librosa.load(wav_file, sr=None)
+    print(f"grabbing {wav_file}")
+    # Load audio without resampling
+    y, sr = librosa.load(wav_file, sr=downsample_in_kHz)
 
-    S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, fmax=8000)
-    S_db = librosa.power_to_db(S, ref=np.max).astype(np.float32)
+    # Compute Short-Time Fourier Transform (STFT)
+    # This gives the linear frequency domain representation
+    frequency_domain = librosa.stft(y)
 
-    return S_db
+    # Convert magnitude to decibels
+    # amplitude_to_db expects the magnitude (absolute value) of the STFT
+    S_db = librosa.amplitude_to_db(np.abs(frequency_domain), ref=np.max)
+
+    return S_db.astype(np.float32)
         
 
 

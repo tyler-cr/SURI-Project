@@ -7,6 +7,8 @@ from tensorflow.keras import layers, models
 import numpy as np
 from sklearn.utils import shuffle
 
+import metrics as m
+
 binary_classes = {
                     "object_binary" : {"object": 0, "no_object": 1},
                     "noise_vs_data_binary" : {"noise": 0, "data": 1}
@@ -17,7 +19,12 @@ EPOCHS = 16
 NSAMP = (128, 2813, 1) #TODO: Automate this
 KERNEL_SIZE = 3
 
-def create_model():
+def create_model(shape: np.ndarray = NSAMP, 
+                 filter_count: int = 16, 
+                 kernel_size: int = KERNEL_SIZE,
+                 pool_size: int = 3,
+                 output_type: str = "sigmoid",
+                 label_count: int = 1):
     """
     Constructs and compiles a sequential CNN model for binary classification.
     
@@ -31,26 +38,28 @@ def create_model():
 
     model = keras.Sequential()
     model.add(layers.Input(shape=NSAMP))
-    model.add(layers.Conv2D(16, kernel_size = KERNEL_SIZE, activation='relu'))
-    model.add(layers.Conv2D(16, kernel_size = KERNEL_SIZE, activation='relu'))
-    model.add(layers.Conv2D(16, kernel_size = KERNEL_SIZE, activation='relu'))
-    model.add(layers.MaxPooling2D(pool_size=3))
+    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
+    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
+    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
+    model.add(layers.MaxPooling2D(pool_size=pool_size))
     model.add(layers.Dropout(0.25))
 
-    model.add(layers.Conv2D(16, kernel_size = KERNEL_SIZE, activation='relu'))
-    model.add(layers.Conv2D(16, kernel_size = KERNEL_SIZE, activation='relu'))
-    model.add(layers.MaxPooling2D(pool_size=3))
+    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
+    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
+    model.add(layers.MaxPooling2D(pool_size=pool_size))
     model.add(layers.Dropout(0.25)) 
 
-    model.add(layers.Conv2D(16, kernel_size = KERNEL_SIZE, activation='relu'))
-    model.add(layers.Conv2D(16, kernel_size = KERNEL_SIZE, activation='relu'))
-    model.add(layers.MaxPooling2D(pool_size=3))
+    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
+    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
+    model.add(layers.MaxPooling2D(pool_size=pool_size))
     model.add(layers.Dropout(0.25))
 
     model.add(layers.GlobalAveragePooling2D())
-    model.add(layers.Dense(16, activation='relu'))
+    model.add(layers.Dense(filter_count, activation='relu'))
     model.add(layers.Dropout(0.5))
-    model.add(layers.Dense(1, activation='sigmoid'))
+
+    # this should really just be either sigmoid or softmax. Maybe there are usecases for others
+    model.add(layers.Dense(label_count, activation=output_type)) 
 
     print("compiling model...")
 
@@ -106,50 +115,40 @@ def save_model(model, file_dir: str):
 
 
 if __name__ == "__main__":
+    print("Attempting to load previous model...")
+    model = keras.models.load_model("C:/Users/Tyler/Desktop/SURI-Project/ml/models/[toy]noiseVSdata_model.keras")
     
     print("Loading np arrays...")
     print("Loading data array...")
-    train_data   = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_noise_vs_sound_spectros.npy")
+    test_data   = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_noise_vs_sound_test_data.npy")
     
     print("Loaded data. Now loading labels...")
-    train_labels = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_noise_vs_sound_labels.npy")
+    test_labels = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_noise_vs_sound_test_labels.npy")
 
-    
-    print("shuffling arrays...")
-    train_data, train_labels = shuffle(train_data, train_labels)
+    predictions = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_noise_vs_sound_test_predictions.npy")
 
-    train_labels = train_labels.astype("float32")
+    print("expect it to break here...")
+    tally = m.tally_predictions(model, test_data, test_labels)
+    basic_metrics = m.basic_metrics(tally)
+    print(basic_metrics)
+    advanced_metrics = m.advanced_metrics(tally, basic_metrics)
+    print(advanced_metrics)
 
-    split_point = (int)(len(train_labels) * .8)
+    predictions = model.predict(test_data).ravel()
+    predicted_labels = (predictions >= 0.5).astype("int32")
+    actual_labels = test_labels.astype("int32").ravel()
 
-    print("creating test arrays as splice of train arrays...")
+    print(m.confusion_matrix(actual_labels, predicted_labels, 2))
 
-    test_data   = train_data[split_point:]
-    test_labels = train_labels[split_point:]
-    
-    train_data   = train_data[:split_point]
-    train_labels = train_labels[:split_point]
-    
-
-    print("creating model...")
-    test_model = create_model()
-
-    print("fitting model...")
-    history = fit_model(test_model, train_data, train_labels, 1)
-
-    print("scoring model...")
-    score = score_model(test_model, test_data, test_labels, 1)
-    print("score=%0.3f%%" % (100.0*score[1],))
-
-    if score[1] > .70:
-        print("considering model a success... saving")
-        save_model(test_model, "first_model.keras")
+    # if score[1] > .70:
+    #     print("considering model a success... saving")
+    #     save_model(test_model, "first_model.keras")
 
 
-    else:
-        print("model wasn't so hot... do you want to save?")
-        user_input = input("Type yes to save: ")
-        if user_input.lower() in ["yes", "y"]:
-             save_model(test_model, "first_model.keras")
+    # else:
+    #     print("model wasn't so hot... do you want to save?")
+    #     user_input = input("Type yes to save: ")
+    #     if user_input.lower() in ["yes", "y"]:
+    #          save_model(test_model, "first_model.keras")
 
 

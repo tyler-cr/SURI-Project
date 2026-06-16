@@ -475,10 +475,10 @@ def spectrograms_from_dir(wav_directory: str = None, border: bool = True):
 
 def get_raw_spectro_list(wav_dir: str):
     """
-    Loads, normalizes, and stacks mel-spectrograms from all WAV files in a directory.
+    Loads, normalizes, and stacks spectrograms from all WAV files in a directory.
     
     Reads every .wav file in the specified path (sorted alphabetically), generates 
-    raw mel-spectrograms using `c.get_raw_spectro()`, applies min-max normalization 
+    raw spectrograms using `c.get_raw_spectro()`, applies min-max normalization 
     (shifting by +80dB and scaling by 1/80 to clamp between [0, 1]), and adds a 
     channel dimension for batch processing.
     
@@ -504,17 +504,21 @@ def get_raw_spectro_list(wav_dir: str):
 
 if __name__ == "__main__":
 
-    print("test")
-    exit()
-
-    npy_file_path = "/Users/tylercrimando/SURI-Project/ml/npy_files"
+    npy_file_path = "/mnt/c/Users/Tyler/Desktop/SURI-Project/ml/npy_files"
     augmented_dir_path = "sensor/WAV_files/Distances/Spliced/augmented"
 
     print(f"grabbing list of raw spectrogram data from {augmented_dir_path}... please be patient!")
     raw_spectro = get_raw_spectro_list(augmented_dir_path)
 
     print(f"saving list of raw spectrogram data into npy file... please be patient!")
-    np.save(f"{npy_file_path}/distance_noise_vs_sound_spectros.npy", raw_spectro)
+    np.save(f"{npy_file_path}/distance_frequency_checking_spectros.npy", raw_spectro)
+
+    print("Hopefully creating np array of new_freq labels. Let's hope!")
+    labels = np.array([(0 if "10Hz" in f.name else 1 if "100Hz" in f.name else 2) for f in sorted(Path(augmented_dir_path).iterdir()) if f.suffix.lower() == ".wav"])
+    #where 0 if 10Hz, 1 if 100Hz, 2 if 200Hz
+    np.save(f"{npy_file_path}/distance_frequency_checking_labels.npy", labels)
+
+
 
 
     # NOTE: THIS IS OLD CODE BEFORE ME USING CSVS FOR GRABBING WAVS. KEEPING FOR NOW
