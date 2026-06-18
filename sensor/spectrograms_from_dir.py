@@ -495,16 +495,16 @@ def get_raw_spectro_list(wav_dir: str):
     """
 
     all_wavs = np.array([c.get_raw_spectro(f) for f in sorted(Path(wav_dir).iterdir()) if f.suffix.lower() == ".wav"], dtype=np.float32)
-
+    print("get_raw_spectro_list: adding np.newaxis for ml models")
     all_wavs = all_wavs[..., np.newaxis]
-    
+    print("get_raw_spectro_list: clipping all wavs...\n")
     all_wavs = np.clip((all_wavs + 80) / 80, 0, 1).astype(np.float32)
     return all_wavs   
 
 
 if __name__ == "__main__":
 
-    npy_file_path = "/mnt/c/Users/Tyler/Desktop/SURI-Project/ml/npy_files"
+    npy_file_path = "c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files"
     augmented_dir_path = "sensor/WAV_files/Distances/Spliced/augmented"
 
     print(f"grabbing list of raw spectrogram data from {augmented_dir_path}... please be patient!")

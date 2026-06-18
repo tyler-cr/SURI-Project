@@ -13,7 +13,7 @@ LOG  = 0
 MEL  = 1
 BOTH = 2
 
-def get_raw_spectro(wav_file: str, downsample_in_kHz: int = None):
+def get_raw_spectro(wav_file: str):
     """
     Extracts a raw STFT spectrogram from a WAV file as decibel-scaled data.
 
@@ -26,18 +26,20 @@ def get_raw_spectro(wav_file: str, downsample_in_kHz: int = None):
     Returns:
         np.ndarray: Raw spectrogram in dB with shape (freq_bins, time_frames).
     """
-    print(f"grabbing {wav_file}")
+    print(f"Grabbing {wav_file}")
     # Load audio without resampling
-    y, sr = librosa.load(wav_file, sr=downsample_in_kHz)
+    y, sr = librosa.load(wav_file)
 
     # Compute Short-Time Fourier Transform (STFT)
     # This gives the linear frequency domain representation
+    print(f"Computing STFT...")
     frequency_domain = librosa.stft(y)
 
     # Convert magnitude to decibels
     # amplitude_to_db expects the magnitude (absolute value) of the STFT
+    print("Converting magnitude to decibels...")
     S_db = librosa.amplitude_to_db(np.abs(frequency_domain), ref=np.max)
-
+    print()
     return S_db.astype(np.float32)
         
 

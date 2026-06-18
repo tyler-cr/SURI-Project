@@ -16,11 +16,11 @@ binary_classes = {
 
 BATCH_SIZE = 16
 EPOCHS = 16
-NSAMP = (128, 2813, 1) #TODO: Automate this
+NSAMP = (1025, 1292, 1) #TODO: Automate this
 KERNEL_SIZE = 3
 
-def create_model(shape: np.ndarray = NSAMP, 
-                 filter_count: int = 16, 
+def create_model(shape: tuple[int, int, int] = NSAMP, 
+                 filter_count: int = 32, 
                  kernel_size: int = KERNEL_SIZE,
                  pool_size: int = 3,
                  output_type: str = "sigmoid",
@@ -37,25 +37,25 @@ def create_model(shape: np.ndarray = NSAMP,
     """
 
     model = keras.Sequential()
-    model.add(layers.Input(shape=NSAMP))
-    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
-    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
-    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
+    model.add(layers.Input(shape=shape))
+    model.add(layers.Conv2D(filter_count, kernel_size = (1,9), activation='relu'))
+    model.add(layers.Conv2D(filter_count, kernel_size = kernel_size, activation='relu'))
+    model.add(layers.Conv2D(filter_count, kernel_size = kernel_size, activation='relu'))
     model.add(layers.MaxPooling2D(pool_size=pool_size))
     model.add(layers.Dropout(0.25))
 
-    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
-    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
+    model.add(layers.Conv2D(2*filter_count, kernel_size = (1,9), activation='relu'))
+    model.add(layers.Conv2D(2*filter_count, kernel_size = kernel_size, activation='relu'))
     model.add(layers.MaxPooling2D(pool_size=pool_size))
     model.add(layers.Dropout(0.25)) 
 
-    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
-    model.add(layers.Conv2D(filter_count, kernel_size = KERNEL_SIZE, activation='relu'))
+    model.add(layers.Conv2D(4*filter_count, kernel_size = (1,9), activation='relu'))
+    model.add(layers.Conv2D(4*filter_count, kernel_size = kernel_size, activation='relu'))
     model.add(layers.MaxPooling2D(pool_size=pool_size))
     model.add(layers.Dropout(0.25))
 
-    model.add(layers.GlobalAveragePooling2D())
-    model.add(layers.Dense(filter_count, activation='relu'))
+    model.add(layers.GlobalMaxPooling2D())
+    model.add(layers.Dense(64, activation='relu'))
     model.add(layers.Dropout(0.5))
 
     # this should really just be either sigmoid or softmax. Maybe there are usecases for others
@@ -63,8 +63,13 @@ def create_model(shape: np.ndarray = NSAMP,
 
     print("compiling model...")
 
-    model.compile(loss=keras.losses.binary_crossentropy, 
-                  optimizer=keras.optimizers.Adam(), metrics = ['accuracy']
+    if label_count == 1:
+        loss = keras.losses.BinaryCrossentropy()
+    else:
+        loss = keras.losses.SparseCategoricalCrossentropy()
+
+    model.compile(loss=loss, #TODO: loss type is dependent on how many labels...
+                  optimizer=keras.optimizers.Adam(), metrics = ['accuracy'],
                   )
 
     return model
@@ -83,7 +88,17 @@ def fit_model(model, x_train, y_train, verbose: int = 0):
         tf.keras.callbacks.History: Object containing training history metrics.
     """
     print("beginning to fit model...")
-    history = model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose = verbose)
+
+    callback = keras.callbacks.EarlyStopping(monitor='val_loss',
+                                             patience=2,
+                                             start_from_epoch=4,
+                                             verbose=verbose,
+                                             restore_best_weights=True
+                                             )
+
+    history = model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, verbose = verbose, callbacks = [callback], validation_split=0.1)
+
+    print(f"Total epochs called; {len(history.history['loss'])}\n")
     return history
 
 def score_model(model, x_test, y_test, verbose: int = 0):
@@ -115,30 +130,21 @@ def save_model(model, file_dir: str):
 
 
 if __name__ == "__main__":
-    print("Attempting to load previous model...")
-    model = keras.models.load_model("C:/Users/Tyler/Desktop/SURI-Project/ml/models/[toy]noiseVSdata_model.keras")
-    
-    print("Loading np arrays...")
-    print("Loading data array...")
-    test_data   = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_noise_vs_sound_test_data.npy")
-    
-    print("Loaded data. Now loading labels...")
-    test_labels = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_noise_vs_sound_test_labels.npy")
 
-    predictions = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_noise_vs_sound_test_predictions.npy")
+    print("loading labels and data...")
+    training_labels = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_frequency_checking_train_labels.npy").astype(np.int32)
+    training_data = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_frequency_checking_train_data.npy").astype(np.float32)
 
-    print("expect it to break here...")
-    tally = m.tally_predictions(model, test_data, test_labels)
-    basic_metrics = m.basic_metrics(tally)
-    print(basic_metrics)
-    advanced_metrics = m.advanced_metrics(tally, basic_metrics)
-    print(advanced_metrics)
+    #testing_labels = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_frequency_checking_test_labels.npy")
+    #testing_data = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_frequency_checking_test_data.npy")
 
-    predictions = model.predict(test_data).ravel()
-    predicted_labels = (predictions >= 0.5).astype("int32")
-    actual_labels = test_labels.astype("int32").ravel()
+    print("Creating model and fitting. Be patient!")
+    model = create_model(output_type="softmax", label_count=3)
+    history = fit_model(model, training_data, training_labels, 1)
+    save_model(model, file_dir="[toy]frequency_checking.keras")
 
-    print(m.confusion_matrix(actual_labels, predicted_labels, 2))
+    print("maybe run tests now")
+
 
     # if score[1] > .70:
     #     print("considering model a success... saving")
