@@ -5,6 +5,7 @@ import librosa
 import matplotlib.pyplot as plt
 import sys
 import os
+import json
 from PIL import Image
 from pathlib import Path
 
@@ -12,6 +13,183 @@ from pathlib import Path
 LOG  = 0
 MEL  = 1
 BOTH = 2
+
+def dict_from_amplitudes():
+    Full = {
+        "5Amp" :{
+            "noise":{
+                "10Hz" :{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                },
+                "100Hz":{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                },
+                "200Hz":{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                }
+            },
+            "data":{
+                "10Hz" :{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                },
+                "100Hz":{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                },
+                "200Hz":{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                }
+            }
+        },
+        "10Amp":{
+            "noise":{
+                "10Hz" :{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                },
+                "100Hz":{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                },
+                "200Hz":{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                }
+            },
+            "data":{
+                "10Hz" :{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                },
+                "100Hz":{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                },
+                "200Hz":{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                }
+            }
+        },
+        "20Amp":{
+            "noise":{
+                "10Hz" :{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                },
+                "100Hz":{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                },
+                "200Hz":{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                }
+            },
+            "data":{
+                "10Hz" :{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                },
+                "100Hz":{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                },
+                "200Hz":{
+                    "30cm":[],
+                    "45cm":[],
+                    "60cm":[],
+                    "75cm":[],
+                    "90cm":[],
+                }
+            }
+        },
+    }
+
+    return Full
+
+
+def create_waveform_graph(wav_file_dir: str, graph_title: str, graph_file_path: str = None):
+    y, sr = librosa.load(wav_file_dir)
+
+    fig, ax = plt.subplots(figsize=(11, 8.5))
+    fig.patch.set_facecolor("black")
+    ax.set_facecolor("black")
+
+    librosa.display.waveshow(y, sr=sr, axis="s", color="red", ax=ax)
+
+    ax.set_title(graph_title, color="white")
+    ax.set_xlabel("Time (Seconds)", color="white")
+    ax.set_ylabel("Normalized Amplitude", color="white")
+
+    ax.tick_params(colors="white")
+
+    for spine in ax.spines.values():
+        spine.set_color("orange")
+
+    if graph_file_path is not None:
+        plt.savefig(graph_file_path, facecolor=fig.get_facecolor(), bbox_inches="tight")
+    else:
+        plt.show()
+
+    plt.close()
+
 
 def get_raw_spectro(wav_file: str):
     """
@@ -205,7 +383,7 @@ def create_mel_spectrogram_from_wav(wav_file_dir: str, spectrogram_title: str, s
         • Mel scale: 128 frequency bins, max frequency 8000 Hz
         • Power converted to dB scale for visualization
         • Output image has white background
-        • Resolution: standard figure size (10×4 inches)
+        • Resolution: standard figure size (10x4 inches)
         • File format: PNG
     
     Raises:
@@ -243,9 +421,50 @@ def create_mel_spectrogram_from_wav(wav_file_dir: str, spectrogram_title: str, s
 
 if __name__ == "__main__":
 
-    print("test")
-    exit()
+    clipped_dir = "C:/Users/Tyler/Desktop/SURI-Project/sensor/WAV_files/Distances/Spliced"
 
+    # waveform_dir = f"{clipped_dir}/waveforms"
+    # print(create_amplitude_features(clipped_dir))
+
+    data = dict_from_amplitudes()
+
+    for f in (file for file in Path(clipped_dir).iterdir() if file.suffix.lower() == ".wav"):
+        split_string = f.name.split("_")
+        geo_type = split_string[0]
+        distance = split_string[1]
+        freq     = split_string[2]
+        amp      = split_string[3]
+        sample   = split_string[4]
+
+        data[amp][geo_type][freq][distance].append(create_amplitude_features(f))
+
+    print("testing json formatting...")
+    with open("data.json", "w") as f:
+
+        json.dump(data, f, indent=4)  # indent=4 makes it pretty-printed
+
+    
+
+
+
+    # TODO: make into own function
+    # for f in (file for file in Path(clipped_dir).iterdir() if file.suffix.lower() == ".wav"):
+    #     split_string = f.name.split("_")
+    #     geo_type = split_string[0]
+    #     distance = split_string[1]
+    #     freq     = split_string[2]
+    #     amp      = split_string[3]
+
+    #     graph_title = f"{geo_type} waveform for {freq} at {amp}, {distance} from geophone".upper()
+        
+    #     file_title = f"{f.name}_waveform.png"
+
+    #     new_file_dir = f"{waveform_dir}/{file_title}"
+
+    #     #create waveform
+    #     print(f"creating waveform for {f.name}")
+    #     create_waveform_graph(f, graph_title=graph_title, graph_file_path=new_file_dir)  
+
+
+    exit()
     file_path = "/Users/tylercrimando/SURI-Project"
-    create_spectrogram_from_wav_borderless(wav_file_dir="/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/45cm_200Hz_20Amp_3.wav", spectrogram_title="test1", spectrogram_filepath=file_path)
-    create_spectrogram_from_wav(wav_file_dir="/Users/tylercrimando/SURI-Project/sensor/WAV_files/Distances/45cm_200Hz_20Amp_3.wav", spectrogram_title="test2", spectrogram_filepath=file_path)

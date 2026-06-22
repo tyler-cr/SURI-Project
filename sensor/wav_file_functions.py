@@ -333,10 +333,11 @@ def downsample_wav_array(wav_file_dir: str , new_rate_in_kHz: int, save: bool = 
     return sound_array
 
 
+
+
 if __name__ == "__main__":
 
-    a = 5
-
+    a=5
     #TODO: make this into a function
     # cur_dir = "WAV_files/Distances/Spliced"
     
