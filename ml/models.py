@@ -128,22 +128,25 @@ def save_model(model, file_dir: str):
     print("saving model...")
     model.save(file_dir)
 
+def load_model(file_dir: str):
+    return keras.models.load_model(file_dir)
+
 
 if __name__ == "__main__":
 
-    print("loading labels and data...")
-    training_labels = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_frequency_checking_train_labels.npy").astype(np.int32)
-    training_data = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_frequency_checking_train_data.npy").astype(np.float32)
+    print("loading model...")
+    model = load_model("C:/Users/Tyler/Desktop/SURI-Project/ml/models/[toy]frequency_checking.keras")
 
     #testing_labels = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_frequency_checking_test_labels.npy")
-    #testing_data = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_frequency_checking_test_data.npy")
+    training_data = np.load("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_frequency_checking_train_labels.npy")
+    testing_data = np.save("c:/Users/Tyler/Desktop/SURI-Project/ml/npy_files/distance_frequency_checking_test_data.npy")
 
-    print("Creating model and fitting. Be patient!")
-    model = create_model(output_type="softmax", label_count=3)
-    history = fit_model(model, training_data, training_labels, 1)
-    save_model(model, file_dir="[toy]frequency_checking.keras")
+    print(testing_data.size == training_data.size)
+    exit()
 
-    print("maybe run tests now")
+    print(score_model(model, testing_data, testing_labels, 1))
+
+    
 
 
     # if score[1] > .70:

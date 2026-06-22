@@ -3,7 +3,7 @@ from pathlib import Path
 from PIL import Image, ImageChops
 import sys
 
-import convert_wav_to_spectro as c
+import sensor.convert_wav_file as c
 import wav_file_functions as w
 import interpret_images as interpret
 import numpy as np
