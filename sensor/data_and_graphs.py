@@ -147,7 +147,69 @@ def create_amp_dot_plots(clipped_dir: str = "C:/Users/Tyler/Desktop/SURI-Project
             
         i += 1
 
+import numpy as np
+import librosa
+import matplotlib.pyplot as plt
+
+def create_spectrum_graph(wav_file_dir: str, graph_title: str, graph_file_path: str = None):
+    y, sr = librosa.load(wav_file_dir, sr=None)
+
+    y = y - np.mean(y)
+
+    window = np.hanning(len(y))
+    y_windowed = y * window
+
+    spectrum = np.fft.rfft(y_windowed)
+    freqs = np.fft.rfftfreq(len(y_windowed), d=1 / sr)
+
+    magnitude = np.abs(spectrum)
+    magnitude_db = 20 * np.log10(magnitude + 1e-12)
+
+    fig, ax = plt.subplots(figsize=(11, 8.5))
+
+    fig.patch.set_facecolor("black")
+    ax.set_facecolor("black")
+
+    ax.plot(freqs, magnitude_db, color="red")
+
+    ax.set_title(graph_title, color="white")
+    ax.set_xlabel("Frequency (Hz)", color="white")
+    ax.set_ylabel("Magnitude (dB)", color="white")
+
+    ax.tick_params(colors="white")
+
+    for spine in ax.spines.values():
+        spine.set_color("orange")
+
+    ax.set_xlim(0, 800)
+
+    if graph_file_path is not None:
+        plt.savefig(graph_file_path, facecolor=fig.get_facecolor(), bbox_inches="tight")
+    else:
+        plt.show()
+
+    plt.close(fig)
+
+def create_spectrum_graph_from_dir(wav_dir: str, graph_dir_path: str = None):
+    a = 5
+    for f in (file for file in Path(wav_dir).iterdir() if file.suffix.lower() == ".wav"):
+        print(f"making spectrum for {f.name}")
+        split_string = f.name.split("_")
+        geo_type = split_string[0]
+        distance = split_string[1]
+        freq     = split_string[2]
+        amp      = split_string[3]
+        sample   = split_string[4]
+
+        graph_name = f"{geo_type} {freq} spectrum, {distance} from wave generator, {amp}, sample #{sample}"
+        
+        graph_file_name = f"{graph_dir_path}/spectrum_{f.name[:-3]}png"
+
+        create_spectrum_graph(f, graph_name, graph_file_name)
+
 
 if __name__ == "__main__":
-    create_amp_dot_plots()
+    wav_path      = "C:/Users/Tyler/Desktop/SURI-Project/sensor/WAV_files/Distances/Spliced"
+    spectrum_path = "C:/Users/Tyler/Desktop/SURI-Project/sensor/WAV_files/Distances/Spliced/spectrums"
+    create_spectrum_graph_from_dir(wav_path, spectrum_path)
 

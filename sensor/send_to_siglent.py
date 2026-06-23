@@ -6,6 +6,8 @@ import pyvisa
 import numpy as np
 import time
 import csv
+import winsound
+
 
 rm = pyvisa.ResourceManager()
 
@@ -106,16 +108,19 @@ def batch_siglent_run(sdg, dict_list: dict, buffer: int = 4):
         cur_cav     = instruction["CAVITY"]
 
         if prev_geo_loc != cur_geo_loc:
+            winsound.Beep(400, 1000)
             input(f"WAIT: GEOPHONE LOCATION INSTRUCTION CHANGED. PREV:{prev_geo_loc}. CUR:{cur_geo_loc}\n PLEASE SWITCH TO DESIGNATED LOCATION AND PRESS 'ENTER' TO CONTINUE")
             input("please press 'ENTER' again to continue")
             prev_geo_loc = cur_geo_loc
 
         if prev_wav_loc != cur_wav_loc:
+            winsound.Beep(400, 1000)
             input(f"WAIT: WAVE GENERATOR LOCATION INSTRUCTION CHANGED. PREV:{prev_wav_loc}. CUR:{cur_wav_loc}\n PLEASE SWITCH TO DESIGNATED LOCATION AND PRESS 'ENTER' TO CONTINUE")
             input("please press 'ENTER' again to continue")
             prev_wav_loc = cur_wav_loc
 
         if prev_cav != cur_cav:
+            winsound.Beep(400, 1000)
             input(f"WAIT: CAVITY INSTRUCTION CHANGED. PREV:{prev_cav}. CUR:{cur_cav}\n PLEASE SWITCH TO DESIGNATED LOCATION AND PRESS 'ENTER' TO CONTINUE")
             input("please press 'ENTER' again to continue")
             prev_cav = cur_cav
@@ -284,7 +289,8 @@ def trigger_basic(sdg, ch=1):
     Equivalent to calling output(sdg, True, ch).
     
     Args:
-        sdq: PyVISA resource object for the Siglent SDG. (Note: parameter name typo?)
+        sdg: PyVISA resource object for the Siglent SDG.
+        
         ch (int): Channel number (1 or 2). Default: 1.
     """
     sdg.write(f"C{ch}:OUTP ON")
@@ -293,10 +299,10 @@ if __name__ == "__main__":
 
     #print(csv_to_list("C:/Users/Tyler/Desktop/SURI-Project/CSV_To_Wav-Sheet1.csv"))
 
-    test_file_path = "c:/Users/Tyler/Downloads/[TEST]CSV_TO_SIGLENT.csv"
+    test_file_path = "C:/Users/Tyler/Desktop/SURI-Project/sensor/siglent_send_wave_csvs/[Wave@A1]CSV_to_SIGLENT_DICT.csv"
 
     sdg = connect()
 
     instruction_list = csv_to_dict_list(test_file_path)
 
-    batch_siglent_run(sdg, instruction_list)
+    batch_siglent_run(sdg, instruction_list, buffer=5)
